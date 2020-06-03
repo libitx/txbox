@@ -9,7 +9,7 @@ defmodule Bitbox.TransactionsTest do
 
   @tx2 %{
     txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
-    channel: "/testing"
+    channel: "testing"
   }
 
   def fixture(attrs \\ @tx1) do
@@ -29,15 +29,15 @@ defmodule Bitbox.TransactionsTest do
     test "returns a tx", %{tx1: tx} do
       assert %Tx{} = tx = Transactions.get(tx.txid)
       assert tx.txid == @tx1.txid
-      assert tx.channel == "/bitbox"
+      assert tx.channel == "bitbox"
     end
 
     test "returns a tx when querying by channel", %{tx2: tx} do
       assert %Tx{} = tx =
-        Transactions.by_channel("/testing")
+        Transactions.by_channel("testing")
         |> Transactions.get(tx.txid)
       assert tx.txid == @tx2.txid
-      assert tx.channel == "/testing"
+      assert tx.channel == "testing"
     end
 
     test "returns nil when not found" do
@@ -63,7 +63,7 @@ defmodule Bitbox.TransactionsTest do
 
     test "returns tx filtered by channel", %{tx2: tx} do
       txns =
-        Transactions.by_channel("/testing")
+        Transactions.by_channel("testing")
         |> Transactions.all
       assert length(txns) == 1
       assert Enum.member?(txns, tx)
@@ -102,10 +102,20 @@ defmodule Bitbox.TransactionsTest do
 
   describe "update_status/2" do
     setup do
-      %{tx: fixture(@tx1)}
+      %{
+        tx: fixture(@tx1),
+        status: %{payload: %{foo: :bar}}
+      }
     end
 
+    test "returns Tx with valid attributes", %{tx: tx, status: status} do
+      assert {:ok, %Tx{} = tx} = Transactions.update_status(tx, status)
+      assert tx.status.payload == %{foo: :bar}
+    end
 
+    test "returns Changeset with invalid attributes", %{tx: tx} do
+      assert {:error, %Ecto.Changeset{}} = Transactions.update_status(tx, %{payload: ""})
+    end
   end
 
 end

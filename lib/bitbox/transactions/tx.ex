@@ -6,11 +6,10 @@ defmodule Bitbox.Transactions.Tx do
 
   @primary_key {:txid, :string, autogenerate: false}
   @foreign_key_type :string
-
-
+  
   schema "bitbox_txns" do
     field :rawtx, :binary
-    field :channel, :string, default: "/bitbox"
+    field :channel, :string, default: "bitbox"
     field :tags, {:array, :string}
     field :data, :map
 
@@ -28,13 +27,13 @@ defmodule Bitbox.Transactions.Tx do
     |> cast_embed(:meta, with: &Meta.changeset/2)
     |> validate_required([:txid, :channel])
     |> validate_format(:txid, ~r/^[a-f0-9]{64}$/i)
-    |> validate_format(:channel, ~r/^\/[\w\-\/]+$/)
+    |> validate_format(:channel, ~r/^\w[\w\-\/]*$/)
   end
 
 
   def status_changeset(tx, attrs) do
     tx
-    |> cast(attrs, [])
+    |> cast(%{status: attrs}, [])
     |> cast_embed(:status, with: &Status.changeset/2)
   end
 

@@ -3,6 +3,8 @@ defmodule Bitbox.Transactions.Meta do
   import Ecto.Changeset
 
 
+  @primary_key false
+  
   embedded_schema do
     field :title
     field :description

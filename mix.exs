@@ -26,6 +26,7 @@ defmodule Bitbox.MixProject do
     [
       {:ecto, "~> 3.4"},
       {:ecto_sql, "~> 3.4"},
+      {:jason, "~> 1.2"},
       {:postgrex, "~> 0.15", optional: true},
     ]
   end
