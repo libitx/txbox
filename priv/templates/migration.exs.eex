@@ -1,0 +1,11 @@
+defmodule <%= module_prefix %>.Repo.Migrations.CreateBitboxTable do
+  use Ecto.Migration
+
+  def change do
+    create table(:bitbox_txns, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      
+      timestamps()
+    end
+  end
+end

@@ -1,5 +1,5 @@
 defmodule BitboxTest do
-  use ExUnit.Case
+  use Bitbox.Test.CaseTemplate
   doctest Bitbox
 
   test "greets the world" do
