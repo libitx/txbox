@@ -29,7 +29,7 @@ defmodule Bitbox.TxStatus.Queue do
   @impl true
   def init(_) do
     queue = Transactions.get_unconfirmed_txids()
-    |> Enum.map(& {&1.txid, 0})
+    |> Enum.map(& {&1, 0})
     |> Qex.new
 
     state = %{

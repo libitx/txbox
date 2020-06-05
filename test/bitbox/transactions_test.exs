@@ -131,8 +131,8 @@ defmodule Bitbox.TransactionsTest do
 
     test "returns list of txids", ctx do
       res = Transactions.get_unconfirmed_txids()
-      assert Enum.map(res, & &1.txid) |>  Enum.member?(ctx.tx1.txid)
-      refute Enum.map(res, & &1.txid) |>  Enum.member?(ctx.tx2.txid)
+      assert Enum.map(res, & &1) |>  Enum.member?(ctx.tx1.txid)
+      refute Enum.map(res, & &1) |>  Enum.member?(ctx.tx2.txid)
     end
   end
 

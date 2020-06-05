@@ -9,17 +9,28 @@ defmodule Bitbox.Transactions do
   TODO
   """
   @spec get(Ecto.Queryable.t, binary) :: Ecto.Schema.t | nil
-  def get(tx \\ Tx, txid)
-    when is_binary(txid),
-    do: @repo.get(tx, txid)
+  def get(tx \\ Tx, txid) when is_binary(txid) do
+    case @repo.get(tx, txid) do
+      %Tx{} = tx ->
+        Tx.fill_virtual_fields(tx)
+      nil ->
+        nil
+    end
+  end
 
 
   @doc """
   TODO
   """
   @spec all(Ecto.Queryable.t) :: [Ecto.Schema.t]
-  def all(tx \\ Tx),
-    do: @repo.all(tx)
+  def all(tx \\ Tx) do
+    case @repo.all(tx) do
+      txns when length(txns) > 0 ->
+        Enum.map(txns, &Tx.fill_virtual_fields/1)
+      [] ->
+        []
+    end
+  end
 
 
   @doc """
@@ -38,9 +49,10 @@ defmodule Bitbox.Transactions do
   """
   @spec update_status(Ecto.Schema.t, map) :: {:ok, Ecto.Schema.t} | {:error, Ecto.Changeset.t()}
   def update_status(%Tx{} = tx, attrs \\ %{}) do
-    tx
-    |> Tx.status_changeset(attrs)
-    |> @repo.update()
+    case tx |> Tx.status_changeset(attrs) |> @repo.update() do
+      {:ok, tx} -> {:ok, Tx.fill_virtual_fields(tx)}
+      {:error, changeset} -> {:error, changeset}
+    end
   end
 
 
@@ -57,10 +69,11 @@ defmodule Bitbox.Transactions do
   """
   @spec get_unconfirmed_txids() :: [Ecto.Schema.t]
   def get_unconfirmed_txids() do
-    Tx
+    "bitbox_txns"
     |> select([:txid])
     |> is_confirmed(false)
-    |> all
+    |> @repo.all
+    |> Enum.map(& &1.txid)
   end
 
 

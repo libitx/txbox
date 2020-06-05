@@ -5,7 +5,6 @@ defmodule Bitbox.TxStatus.Processor do
   require Logger
   use GenStage
   alias Bitbox.Transactions
-  alias Bitbox.Transactions.Tx
   alias Bitbox.TxStatus.Queue
 
 
@@ -53,8 +52,7 @@ defmodule Bitbox.TxStatus.Processor do
         signature: env.signature,
         verified: true
       })
-      unless tx.status && is_integer(tx.status.i),
-        do: requeue_event(event, state)
+      unless tx.confirmed?, do: requeue_event(event, state)
     else
       {:error, :not_found} ->
         Logger.error "TX not found: #{txid}"

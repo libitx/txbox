@@ -12,11 +12,23 @@ defmodule Bitbox.Transactions.Tx do
     field :channel, :string, default: "bitbox"
     field :tags, {:array, :string}
     field :data, :map
+    field :confirmed?, :boolean, virtual: true, default: false
 
     embeds_one :meta, Meta
     embeds_one :status, Status
 
     timestamps()
+  end
+
+
+  @doc """
+  TODO
+  """
+  def fill_virtual_fields(%__MODULE__{} = tx) do
+    case tx.status && is_integer(tx.status.i) do
+      true -> Map.put(tx, :confirmed?, true)
+      _ -> tx
+    end
   end
 
 
