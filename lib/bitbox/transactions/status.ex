@@ -24,8 +24,10 @@ defmodule Bitbox.Transactions.Status do
 
 
   # TODO
-  defp put_block_height(%{valid?: true, changes: %{payload: payload}} = changeset),
-    do: put_change(changeset, :i, get_in(payload, [:block_height]))
+  defp put_block_height(%{valid?: true, changes: %{payload: payload}} = changeset) do
+    i = payload[:block_height] || payload["block_height"]
+    put_change(changeset, :i, i)
+  end
 
   defp put_block_height(changeset), do: changeset
 

@@ -5,16 +5,6 @@ defmodule BitboxTest do
   doctest Bitbox
 
 
-  #test "foo" do
-  #  Bitbox.push(%{
-  #    txid: "515a898e4a83f9584113b55261427fb1e47bd03b230cd7e77829eca2cd2d6fa9"
-  #  })
-  #  Process.sleep(500)
-#
-  #  IO.inspect Bitbox.Transactions.get("515a898e4a83f9584113b55261427fb1e47bd03b230cd7e77829eca2cd2d6fa9")
-  #  assert true
-  #end
-
   def fixture(attrs \\ %{}) do
     txid = :crypto.strong_rand_bytes(32) |> Base.encode16
     {:ok, tx} = attrs
@@ -35,16 +25,6 @@ defmodule BitboxTest do
 
 
   describe "add/2" do
-    #setup do
-    #  IO.puts "mocking1"
-    #  Tesla.Mock.mock_global fn env ->
-    #    IO.puts "mocking2"
-    #    IO.inspect env
-    #    File.read!("test/mocks/tx-status.json") |> Jason.decode! |> Tesla.Mock.json
-    #  end
-    #  :ok
-    #end
-
     test "add a tx to default channel" do
       txid = :crypto.strong_rand_bytes(32) |> Base.encode16
       assert {:ok, %Tx{} = tx} = Bitbox.add(%{txid: txid, meta: %{title: "test-a"}})

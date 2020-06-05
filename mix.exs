@@ -16,8 +16,8 @@ defmodule Bitbox.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
-      mod: {Bitbox.Application, []}
+      extra_applications: [:logger]
+      #mod: {Bitbox.Application, []}
     ]
   end
 
@@ -30,6 +30,7 @@ defmodule Bitbox.MixProject do
       {:gen_stage, "~> 1.0"},
       {:manic, "~> 0.0.3"},
       {:postgrex, "~> 0.15", optional: true},
+      {:qex, "~> 0.5"}
     ]
   end
 

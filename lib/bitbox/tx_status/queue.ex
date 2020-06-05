@@ -30,7 +30,7 @@ defmodule Bitbox.TxStatus.Queue do
   def init(_) do
     queue = Transactions.get_unconfirmed_txids()
     |> Enum.map(& {&1.txid, 0})
-    |> :queue.from_list
+    |> Qex.new
 
     state = %{
       queue: queue,
@@ -62,19 +62,19 @@ defmodule Bitbox.TxStatus.Queue do
 
   # TODO
   defp enqueue_event(event, state) do
-    update_in(state.queue, & :queue.in(event, &1))
+    update_in(state.queue, & Qex.push(&1, event))
     |> take_demanded_events
   end
 
 
   # TODO
   defp take_demanded_events(%{queue: queue} = state) do
-    demand = :queue.len(queue) |> min(state.demand)
-    {demanded, queue} = :queue.split(demand, queue)
-    state = update_in(state.demand, & &1 - :queue.len(demanded))
+    demand = :queue.len(queue.data) |> min(state.demand)
+    {demanded, queue} = Qex.split(queue, demand)
+    state = update_in(state.demand, & &1 - :queue.len(demanded.data))
     |> Map.put(:queue, queue)
 
-    {:noreply, :queue.to_list(demanded), state}
+    {:noreply, Enum.to_list(demanded), state}
   end
 
 end

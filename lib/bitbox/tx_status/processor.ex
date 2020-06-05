@@ -6,6 +6,7 @@ defmodule Bitbox.TxStatus.Processor do
   use GenStage
   alias Bitbox.Transactions
   alias Bitbox.Transactions.Tx
+  alias Bitbox.TxStatus.Queue
 
 
   @max_retries 12
@@ -30,7 +31,7 @@ defmodule Bitbox.TxStatus.Processor do
       max_retries: Keyword.get(opts, :max_retries, @max_retries),
       retry_after: Keyword.get(opts, :retry_after, @retry_after)
     }
-    {:consumer, state, subscribe_to: [{Bitbox.TxStatus.Queue, max_demand: 1}]}
+    {:consumer, state, subscribe_to: [{Queue, max_demand: 1}]}
   end
 
 
@@ -41,8 +42,8 @@ defmodule Bitbox.TxStatus.Processor do
   end
 
 
-  defp check_tx_status({txid, attempts}, state) do
-    with %Tx{} = tx <- Transactions.get(txid),
+  defp check_tx_status({txid, _attempts} = event, state) do
+    with {:ok, tx} <- Bitbox.get("_", txid),
          {:ok, env} <- Manic.TX.status(state.miner, txid, as: :envelope),
          {:ok, payload} <- Manic.JSONEnvelope.parse_payload(env)
     do
@@ -52,16 +53,22 @@ defmodule Bitbox.TxStatus.Processor do
         signature: env.signature,
         verified: true
       })
-
-      unless is_integer(tx.i) || attempts >= state.max_retries,
-        do: Process.send_after(Bitbox.TxStatus.Queue, {:push, {txid, attempts+1}}, state.retry_after)
+      unless tx.status && is_integer(tx.status.i),
+        do: requeue_event(event, state)
     else
+      {:error, :not_found} ->
+        Logger.error "TX not found: #{txid}"
+
       {:error, error} ->
         Logger.error "mAPI error: #{txid} : #{inspect error}"
-
-      nil ->
-        Logger.error "mAPI error: #{txid} : TX not found"
+        requeue_event(event, state)
     end
   end
+
+  defp requeue_event({txid, attempts}, %{max_retries: max_retries, retry_after: retry_after})
+    when attempts < max_retries,
+    do: Process.send_after(Queue, {:push, {txid, attempts+1}}, retry_after)
+
+  defp requeue_event(_event, _state), do: :ok
 
 end
