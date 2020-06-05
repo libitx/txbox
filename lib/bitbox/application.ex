@@ -8,7 +8,8 @@ defmodule Bitbox.Application do
   def start(_type, _args) do
     children = [
       # Starts a worker by calling: Bitbox.Worker.start_link(arg)
-      # {Bitbox.Worker, arg}
+      #Bitbox.TxStatus.Queue,
+      #Bitbox.TxStatus.Processor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

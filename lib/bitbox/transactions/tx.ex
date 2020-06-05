@@ -6,7 +6,7 @@ defmodule Bitbox.Transactions.Tx do
 
   @primary_key {:txid, :string, autogenerate: false}
   @foreign_key_type :string
-  
+
   schema "bitbox_txns" do
     field :rawtx, :binary
     field :channel, :string, default: "bitbox"

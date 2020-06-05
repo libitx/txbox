@@ -1,7 +1,8 @@
 defmodule <%= module_prefix %>.Repo.Migrations.CreateBitboxTable do
   use Ecto.Migration
 
-  def change do
+  def up do
+    # Create the Bitbox tx table
     create table(:bitbox_txns, primary_key: false) do
       add :txid, :string, primary_key: true
       add :rawtx, :binary
@@ -10,13 +11,51 @@ defmodule <%= module_prefix %>.Repo.Migrations.CreateBitboxTable do
       add :meta, :map
       add :data, :map
       add :status, :map
+      add :search_vector, :tsvector
       
       timestamps()
     end
 
-    create index(:bitbox_txns, :channel)
-    create index(:bitbox_txns, :tags, using: "GIN")
-    create index(:bitbox_txns, :meta, using: "GIN")
-    create index(:bitbox_txns, ["(status->>'confirmed')"], name: :bitbox_txns_confirmed_index)
+
+    # Add indexes for common queries and full-text search
+    create index(:bitbox_txns, [:channel])
+    create index(:bitbox_txns, [:tags], using: "GIN")
+    create index(:bitbox_txns, [:search_vector], using: "GIN")
+    create index(:bitbox_txns, ["(status->>'i')"], name: :bitbox_txns_i_index)
+    create index(:bitbox_txns, [:inserted_at])
+
+
+    # Create function for populating search vector
+    execute """
+      CREATE OR REPLACE FUNCTION txns_search_vector_trigger()
+      RETURNS trigger AS $$
+      BEGIN
+        NEW.search_vector := 
+          setweight(to_tsvector('pg_catalog.english', coalesce(NEW.meta->>'title', '')), 'A') ||
+          setweight(to_tsvector('pg_catalog.english', coalesce(NEW.meta->>'description', '')), 'C') ||
+          setweight(to_tsvector('pg_catalog.english', coalesce(NEW.meta->>'content', '')), 'C') ||
+          setweight(to_tsvector('pg_catalog.english', coalesce(NEW.meta->>'image', '')), 'D') ||
+          setweight(to_tsvector('pg_catalog.english', coalesce(NEW.meta->>'link', '')), 'D') ||
+          setweight(to_tsvector('pg_catalog.english', coalesce(array_to_string(NEW.tags, ','), '')), 'B');
+        RETURN NEW;
+      END
+      $$ LANGUAGE plpgsql
+    """
+
+    # Create trigger for updating search vector
+    execute """
+      CREATE TRIGGER txns_search_vector_update
+      BEFORE INSERT OR UPDATE 
+      ON bitbox_txns
+      FOR EACH ROW
+      EXECUTE PROCEDURE txns_search_vector_trigger();
+    """
   end
+
+
+  def down do
+    drop table(:bitbox_txns)
+    execute "DROP FUNCTION IF EXISTS txns_search_vector_trigger;"
+  end
+
 end

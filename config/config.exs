@@ -10,3 +10,5 @@ config :bitbox, Bitbox.Test.Repo,
   priv: "priv/tmp/bitbox_test"
 
 config :logger, level: :warn
+
+config :tesla, adapter: Tesla.Mock
