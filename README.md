@@ -33,14 +33,12 @@ Finally, add `Txbox` to your application's supervision tree.
 ```elixir
 children = [
   {Txbox, [
-    # Manic miner configuration - required
+    # Manic miner configuration (required)
     miner: {:taal, headers: [{"token", "MYTOKEN"}]},
-
-    # Number of times to attempt polling the miner
-    max_retries: 20,    # default is 20
-
-    # Number of seconds to wait before re-polling the miner
-    retry_after: 300    # default is 300 (5 minutes)
+    # Number of times to attempt polling the miner (default is 20)
+    max_retries: 20,
+    # Number of seconds to wait before re-polling the miner (default is 300 - 5 minutes)
+    retry_after: 300
   ]}
 ]
 
