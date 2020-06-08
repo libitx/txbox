@@ -2,12 +2,40 @@ defmodule Txbox do
   @moduledoc """
   Documentation for `Txbox`.
   """
+  use Supervisor
   alias Txbox.Transactions
   alias Txbox.Transactions.Tx
 
 
   @default_channel "txbox"
   @query_keys [:channel, :tagged, :from, :to, :at, :order, :limit, :offset]
+
+
+  @doc """
+  TODO
+  """
+  @spec default_channel() :: String.t  
+  def default_channel(), do: @default_channel
+
+
+  @doc """
+  TODO
+  """
+  @spec start_link(keyword) :: Supervisor.on_start
+  def start_link(options) do
+    Supervisor.start_link(__MODULE__, options, name: __MODULE__)
+  end
+
+
+  @impl true
+  def init(opts) do
+    children = [
+      Txbox.MapiStatus.Queue,
+      {Txbox.MapiStatus.Processor, opts}
+    ]
+
+    Supervisor.init(children, strategy: :one_for_one)
+  end
 
 
   @doc """
@@ -48,23 +76,15 @@ defmodule Txbox do
   def all(query) when is_map(query), do: all(@default_channel, query)
   def all(channel) when is_binary(channel), do: all(channel, %{})
   def all(channel, %{} = query) do
-    query = query
-    |> normalize_query
+    res = query
     |> Map.put(:channel, channel)
+    |> Transactions.query
+    |> Transactions.all
 
-    res = Transactions.query(query) |> Transactions.all
     {:ok, res}
   end
 
 
-  defp normalize_query(query) do
-    query
-    |> Map.new(fn {k, v} -> {normalize_key(k), v} end)
-    |> Map.take(Enum.map(@query_keys, &Atom.to_string/1))
-    |> Map.new(fn {k, v} -> {String.to_atom(k), v} end)
-  end
-
-  def normalize_key(key) when is_atom(key), do: Atom.to_string(key)
-  def normalize_key(key), do: key
+  
 
 end

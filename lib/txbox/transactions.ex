@@ -110,8 +110,22 @@ defmodule Txbox.Transactions do
   """
   @spec query(Ecto.Queryable.t, map) :: Ecto.Queryable.t
   def query(tx \\ Tx, %{} = query) do
-    Enum.reduce(query, tx, &build_query/2)
+    query
+    |> normalize_query
+    |> Enum.reduce(tx, &build_query/2)
   end
+
+
+  # TODO
+  defp normalize_query(query) do
+    query
+    |> Map.new(fn {k, v} -> {normalize_key(k), v} end)
+    |> Map.take(Enum.map(@query_keys, &Atom.to_string/1))
+    |> Map.new(fn {k, v} -> {String.to_atom(k), v} end)
+  end
+
+  def normalize_key(key) when is_atom(key), do: Atom.to_string(key)
+  def normalize_key(key), do: key
 
 
   # TODO

@@ -10,7 +10,7 @@ Txbox is an Elixir implementation of the [TXT Semantic Bitcoin Storage](https://
 
 ## Installation
 
-The package can be installed by adding `tx_box` to your list of dependencies in mix.exs.
+The package can be installed by adding `txbox` to your list of dependencies in `mix.exs`.
 
 
 ```elixir
@@ -28,6 +28,25 @@ mix txbox.gen.migration
 mix ecto.migrate
 ```
 
-Finally, add the following to your project's `config/config.exs`:
+Finally, add `Txbox` to your application's supervision tree.
+
+```elixir
+children = [
+  {Txbox, [
+    # Manic miner configuration - required
+    miner: {:taal, headers: [{"token", "MYTOKEN"}]},
+
+    # Number of times to attempt polling the miner
+    max_retries: 20,    # default is 20
+
+    # Number of seconds to wait before re-polling the miner
+    retry_after: 300    # default is 300 (5 minutes)
+  ]}
+]
+
+Supervisor.start_link(children, strategy: :one_for_one)
+```
+
+## Usage
 
 TODO
