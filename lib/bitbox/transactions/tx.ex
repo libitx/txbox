@@ -4,31 +4,26 @@ defmodule Bitbox.Transactions.Tx do
   alias Bitbox.Transactions.{Meta, Status}
 
 
-  @primary_key {:txid, :string, autogenerate: false}
-  @foreign_key_type :string
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
 
   schema "bitbox_txns" do
+    field :txid, :string
     field :rawtx, :binary
     field :channel, :string, default: "bitbox"
     field :tags, {:array, :string}
     field :data, :map
-    field :confirmed?, :boolean, virtual: true, default: false
+    field :block_hash, :string
+    field :block_height, :integer
+
+    field :mapi_attempt, :integer, default: 0
+    field :mapi_attempted_at, :utc_datetime
+    field :mapi_completed_at, :utc_datetime
 
     embeds_one :meta, Meta
     embeds_one :status, Status
 
     timestamps()
-  end
-
-
-  @doc """
-  TODO
-  """
-  def fill_virtual_fields(%__MODULE__{} = tx) do
-    case tx.status && is_integer(tx.status.i) do
-      true -> Map.put(tx, :confirmed?, true)
-      _ -> tx
-    end
   end
 
 
@@ -47,6 +42,44 @@ defmodule Bitbox.Transactions.Tx do
     tx
     |> cast(%{status: attrs}, [])
     |> cast_embed(:status, with: &Status.changeset/2)
+    |> put_block_height
+    |> put_mapi_attempted
+    |> put_mapi_completed
   end
+
+
+  # TODO
+  defp put_block_height(%{valid?: true,
+    changes: %{
+      status: %{
+        changes: %{payload: payload}
+    }}} = changeset)
+  do
+    i = payload["block_height"] || payload[:block_height]
+    put_change(changeset, :block_height, i)
+  end
+
+  defp put_block_height(changeset), do: changeset
+
+
+  # TODO
+  defp put_mapi_attempted(%{data: tx} = changeset) do
+    now = DateTime.utc_now |> DateTime.truncate(:second)
+    changeset
+    |> put_change(:mapi_attempt, tx.mapi_attempt+1)
+    |> put_change(:mapi_attempted_at, now)
+  end
+
+
+  # TODO
+  defp put_mapi_completed(%{valid?: true, changes: %{block_height: i}} = changeset)
+    when is_integer(i)
+  do
+    now = DateTime.utc_now |> DateTime.truncate(:second)
+    changeset
+    |> put_change(:mapi_completed_at, now)
+  end
+
+  defp put_mapi_completed(changeset), do: changeset
 
 end

@@ -18,9 +18,8 @@ defmodule Bitbox.TxStatus.Queue do
   @doc """
   TODO
   """
-  def push(%Tx{txid: txid}), do: push(txid)
-  def push(txid),
-    do: GenStage.cast(__MODULE__, {:push, txid})
+  def push(%Tx{} = tx),
+    do: GenStage.cast(__MODULE__, {:push, tx})
 
 
   # Callbacks
@@ -28,8 +27,8 @@ defmodule Bitbox.TxStatus.Queue do
 
   @impl true
   def init(_) do
-    queue = Transactions.get_unconfirmed_txids()
-    |> Enum.map(& {&1, 0})
+    queue = Transactions.pending_mapi()
+    |> Transactions.all
     |> Qex.new
 
     state = %{
@@ -42,27 +41,22 @@ defmodule Bitbox.TxStatus.Queue do
 
 
   @impl true
-  def handle_cast({:push, txid}, state) do
-    enqueue_event({txid, 0}, state)
+  def handle_cast({:push, %Tx{} = tx}, state) do
+    update_in(state.queue, & Qex.push(&1, tx))
+    |> take_demanded_events
+  end
+
+
+  @impl true
+  def handle_info({:push, %Tx{} = tx}, state) do
+    update_in(state.queue, & Qex.push(&1, tx))
+    |> take_demanded_events
   end
 
 
   @impl true
   def handle_demand(demand, state) when demand > 0 do
     update_in(state.demand, & &1 + demand)
-    |> take_demanded_events
-  end
-
-
-  @impl true
-  def handle_info({:push, {_txid, attempts} = event}, state)
-    when is_integer(attempts),
-    do: enqueue_event(event, state)
-
-
-  # TODO
-  defp enqueue_event(event, state) do
-    update_in(state.queue, & Qex.push(&1, event))
     |> take_demanded_events
   end
 

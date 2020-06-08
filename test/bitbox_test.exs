@@ -6,7 +6,7 @@ defmodule BitboxTest do
 
 
   def fixture(attrs \\ %{}) do
-    txid = :crypto.strong_rand_bytes(32) |> Base.encode16
+    txid = :crypto.strong_rand_bytes(32) |> Base.encode16(case: :lower)
     {:ok, tx} = attrs
     |> Map.put(:txid, txid)
     |> Transactions.create

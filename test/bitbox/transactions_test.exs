@@ -14,7 +14,7 @@ defmodule Bitbox.TransactionsTest do
 
 
   def fixture(attrs \\ %{}) do
-    txid = :crypto.strong_rand_bytes(32) |> Base.encode16
+    txid = :crypto.strong_rand_bytes(32) |> Base.encode16(case: :lower)
     {:ok, tx} = attrs
     |> Map.put(:txid, txid)
     |> Transactions.create
@@ -61,8 +61,8 @@ defmodule Bitbox.TransactionsTest do
     test "returns all tx", ctx do
       txns = Transactions.all()
       assert length(txns) == 2
-      assert Enum.member?(txns, ctx.tx1)
-      assert Enum.member?(txns, ctx.tx2)
+      assert Enum.map(txns, & &1.txid) |> Enum.member?(ctx.tx1.txid)
+      assert Enum.map(txns, & &1.txid) |> Enum.member?(ctx.tx2.txid)
     end
 
     test "returns tx filtered by channel", %{tx2: tx} do
@@ -70,7 +70,7 @@ defmodule Bitbox.TransactionsTest do
       |> Transactions.in_channel("testing")
       |> Transactions.all
       assert length(txns) == 1
-      assert Enum.member?(txns, tx)
+      assert Enum.map(txns, & &1.txid) |> Enum.member?(tx.txid)
     end
 
     test "returns empty when none found" do
@@ -100,9 +100,17 @@ defmodule Bitbox.TransactionsTest do
       }
     end
 
-    test "returns Tx with valid attributes", %{tx: tx, status: status} do
+    test "returns Tx and updates mapi attributes with valid attributes", %{tx: tx, status: status} do
       assert {:ok, %Tx{} = tx} = Transactions.update_status(tx, status)
+      assert tx.mapi_attempt == 1
+      assert tx.mapi_attempted_at != nil
+      assert tx.mapi_completed_at == nil
       assert tx.status.payload == %{foo: :bar}
+    end
+
+    test "returns Tx and completes mapi status with correct attributes", %{tx: tx} do
+      assert {:ok, %Tx{} = tx} = Transactions.update_status(tx, %{payload: %{block_height: 100}})
+      assert tx.mapi_completed_at != nil
     end
 
     test "returns Changeset with invalid attributes", %{tx: tx} do

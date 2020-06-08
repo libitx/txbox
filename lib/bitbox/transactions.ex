@@ -9,28 +9,15 @@ defmodule Bitbox.Transactions do
   TODO
   """
   @spec get(Ecto.Queryable.t, binary) :: Ecto.Schema.t | nil
-  def get(tx \\ Tx, txid) when is_binary(txid) do
-    case @repo.get(tx, txid) do
-      %Tx{} = tx ->
-        Tx.fill_virtual_fields(tx)
-      nil ->
-        nil
-    end
-  end
+  def get(tx \\ Tx, txid) when is_binary(txid),
+    do: @repo.get_by(tx, txid: txid)
 
 
   @doc """
   TODO
   """
   @spec all(Ecto.Queryable.t) :: [Ecto.Schema.t]
-  def all(tx \\ Tx) do
-    case @repo.all(tx) do
-      txns when length(txns) > 0 ->
-        Enum.map(txns, &Tx.fill_virtual_fields/1)
-      [] ->
-        []
-    end
-  end
+  def all(tx \\ Tx), do: @repo.all(tx)
 
 
   @doc """
@@ -49,10 +36,9 @@ defmodule Bitbox.Transactions do
   """
   @spec update_status(Ecto.Schema.t, map) :: {:ok, Ecto.Schema.t} | {:error, Ecto.Changeset.t()}
   def update_status(%Tx{} = tx, attrs \\ %{}) do
-    case tx |> Tx.status_changeset(attrs) |> @repo.update() do
-      {:ok, tx} -> {:ok, Tx.fill_virtual_fields(tx)}
-      {:error, changeset} -> {:error, changeset}
-    end
+    tx
+    |> Tx.status_changeset(attrs)
+    |> @repo.update()
   end
 
 
@@ -74,6 +60,13 @@ defmodule Bitbox.Transactions do
     |> is_confirmed(false)
     |> @repo.all
     |> Enum.map(& &1.txid)
+  end
+
+  # TODO
+  def pending_mapi(tx \\ Tx) do
+    tx
+    |> is_confirmed(false)
+    |> where([t], t.mapi_attempt < 20)
   end
 
 
@@ -104,10 +97,10 @@ defmodule Bitbox.Transactions do
   def is_confirmed(tx, conf \\ true)
 
   def is_confirmed(tx, true),
-    do: where(tx, [t], not fragment("(status->>'i')::integer") |> is_nil)
+    do: where(tx, [t], not is_nil(t.block_height))
 
   def is_confirmed(tx, false),
-    do: where(tx, [t], fragment("(status->>'i')::integer") |> is_nil)
+    do: where(tx, [t], is_nil(t.block_height))
 
 
   @doc """
@@ -132,16 +125,15 @@ defmodule Bitbox.Transactions do
 
   # TODO
   defp build_query({:channel, "_"}, tx), do: tx
-  defp build_query({:channel, channel}, tx),
-    do: where(tx, channel: ^channel)
+  defp build_query({:channel, channel}, tx), do: where(tx, channel: ^channel)
 
   defp build_query({:tagged, tags}, tx), do: tagged_with(tx, tags)
 
   defp build_query({:from, height}, tx),
-    do: where(tx, fragment("(status->>'i')::integer") >= ^height)
+    do: where(tx, [t], t.block_height >= ^height)
 
   defp build_query({:to, height}, tx),
-    do: where(tx, fragment("(status->>'i')::integer") <= ^height)
+    do: where(tx, [t], t.block_height <= ^height)
 
   defp build_query({:at, true}, tx), do: is_confirmed(tx, true)
   defp build_query({:at, "-null"}, tx), do: is_confirmed(tx, true)
@@ -149,21 +141,19 @@ defmodule Bitbox.Transactions do
   defp build_query({:at, nil}, tx), do: is_confirmed(tx, false)
   defp build_query({:at, "null"}, tx), do: is_confirmed(tx, false)
   defp build_query({:at, height}, tx),
-    do: where(tx, fragment("(status->>'i')::integer") == ^height)
+    do: where(tx, [t], t.block_height == ^height)
 
   defp build_query({:order, "created_at"}, tx),
     do: order_by(tx, asc: :inserted_at)
   defp build_query({:order, "-created_at"}, tx),
     do: order_by(tx, desc: :inserted_at)
   defp build_query({:order, "i"}, tx),
-    do: order_by(tx, fragment("(status->>'i')::integer ASC"))
+    do: order_by(tx, asc: :block_height)
   defp build_query({:order, "-i"}, tx),
-    do: order_by(tx, fragment("(status->>'i')::integer DESC"))
+    do: order_by(tx, desc: :block_height)
 
   defp build_query({:order, _order}, tx), do: tx
-
   defp build_query({:limit, num}, tx), do: limit(tx, ^num)
-
   defp build_query({:offset, num}, tx), do: offset(tx, ^num)
 
 end
