@@ -1,8 +1,8 @@
-defmodule Bitbox.Transactions do
+defmodule Txbox.Transactions do
   import Ecto.Query, warn: false
-  alias Bitbox.Transactions.Tx
+  alias Txbox.Transactions.Tx
 
-  @repo Application.get_env(:bitbox, :repo)
+  @repo Application.get_env(:txbox, :repo)
 
 
   @doc """
@@ -53,17 +53,8 @@ defmodule Bitbox.Transactions do
   @doc """
   TODO
   """
-  @spec get_unconfirmed_txids() :: [Ecto.Schema.t]
-  def get_unconfirmed_txids() do
-    "bitbox_txns"
-    |> select([:txid])
-    |> is_confirmed(false)
-    |> @repo.all
-    |> Enum.map(& &1.txid)
-  end
-
-  # TODO
-  def pending_mapi(tx \\ Tx) do
+  @spec mapi_pending(Ecto.Queryable.t) :: [Ecto.Schema.t]
+  def mapi_pending(tx \\ Tx) do
     tx
     |> is_confirmed(false)
     |> where([t], t.mapi_attempt < 20)

@@ -1,10 +1,10 @@
-defmodule Bitbox.Transactions.Meta do
+defmodule Txbox.Transactions.Meta do
   use Ecto.Schema
   import Ecto.Changeset
 
 
   @primary_key false
-  
+
   embedded_schema do
     field :title
     field :description

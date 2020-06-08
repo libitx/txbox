@@ -1,23 +1,24 @@
-defmodule Bitbox do
+defmodule Txbox do
   @moduledoc """
-  Documentation for `Bitbox`.
+  Documentation for `Txbox`.
   """
-  alias Bitbox.Transactions
-  alias Bitbox.Transactions.Tx
+  alias Txbox.Transactions
+  alias Txbox.Transactions.Tx
 
 
+  @default_channel "txbox"
   @query_keys [:channel, :tagged, :from, :to, :at, :order, :limit, :offset]
 
 
   @doc """
   TODO
   """
-  def add(channel \\ "bitbox", %{} = attrs) do
+  def add(channel \\ @default_channel, %{} = attrs) do
     attrs = Map.put(attrs, :channel, channel)
 
     case Transactions.create(attrs) do
       {:ok, %Tx{} = tx} ->
-        Bitbox.TxStatus.Queue.push(tx)
+        Txbox.MapiStatus.Queue.push(tx)
         {:ok, tx}
 
       {:error, reason} ->
@@ -29,7 +30,7 @@ defmodule Bitbox do
   @doc """
   TODO
   """
-  def get(channel \\ "bitbox", txid) when is_binary(txid) do
+  def get(channel \\ @default_channel, txid) when is_binary(txid) do
     case Transactions.query(%{channel: channel}) |> Transactions.get(txid) do
       %Tx{} = tx ->
         {:ok, tx}
@@ -44,7 +45,7 @@ defmodule Bitbox do
   TODO
   """
   def all(query \\ %{})
-  def all(query) when is_map(query), do: all("bitbox", query)
+  def all(query) when is_map(query), do: all(@default_channel, query)
   def all(channel) when is_binary(channel), do: all(channel, %{})
   def all(channel, %{} = query) do
     query = query

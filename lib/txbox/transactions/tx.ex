@@ -1,16 +1,17 @@
-defmodule Bitbox.Transactions.Tx do
+defmodule Txbox.Transactions.Tx do
   use Ecto.Schema
   import Ecto.Changeset
-  alias Bitbox.Transactions.{Meta, Status}
+  alias Txbox.Transactions.{Meta, Status}
 
 
+  @default_channel "txbox"
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "bitbox_txns" do
+  schema "txbox_txns" do
     field :txid, :string
     field :rawtx, :binary
-    field :channel, :string, default: "bitbox"
+    field :channel, :string, default: @default_channel
     field :tags, {:array, :string}
     field :data, :map
     field :block_hash, :string

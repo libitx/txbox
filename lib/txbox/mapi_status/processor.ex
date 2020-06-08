@@ -1,12 +1,12 @@
-defmodule Bitbox.TxStatus.Processor do
+defmodule Txbox.MapiStatus.Processor do
   @moduledoc """
   TODO
   """
   require Logger
   use GenStage
-  alias Bitbox.Transactions
-  alias Bitbox.Transactions.Tx
-  alias Bitbox.TxStatus.Queue
+  alias Txbox.Transactions
+  alias Txbox.Transactions.Tx
+  alias Txbox.MapiStatus.Queue
 
 
   @max_retries 20

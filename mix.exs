@@ -1,9 +1,9 @@
-defmodule Bitbox.MixProject do
+defmodule Txbox.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :bitbox,
+      app: :txbox,
       version: "0.1.0-beta.1",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -17,7 +17,7 @@ defmodule Bitbox.MixProject do
   def application do
     [
       extra_applications: [:logger]
-      #mod: {Bitbox.Application, []}
+      #mod: {Txbox.Application, []}
     ]
   end
 
@@ -43,7 +43,7 @@ defmodule Bitbox.MixProject do
       test: [
         "ecto.drop --quiet",
         "ecto.create --quiet",
-        "bitbox.gen.migration",
+        "txbox.gen.migration",
         "ecto.migrate",
         "test"
       ]

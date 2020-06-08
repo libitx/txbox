@@ -1,8 +1,8 @@
-defmodule Mix.Tasks.Bitbox.Gen.Migration do
-  @shortdoc "Generates Bitbox's migration"
+defmodule Mix.Tasks.Txbox.Gen.Migration do
+  @shortdoc "Generates Txbox's migration"
 
   @moduledoc """
-  Generates the required Bitbox database migration.
+  Generates the required Txbox database migration.
   """
   use Mix.Task
   import Mix.Generator
@@ -17,14 +17,14 @@ defmodule Mix.Tasks.Bitbox.Gen.Migration do
       Mix.Ecto.ensure_repo(repo, args)
       path = Ecto.Migrator.migrations_path(repo)
 
-      source_path = :bitbox
+      source_path = :txbox
       |> Application.app_dir()
       |> Path.join("priv/templates/migration.exs.eex")
 
       generated_file = source_path
       |> EEx.eval_file(module_prefix: app_module())
 
-      target_file = Path.join(path, "#{timestamp()}_setup_bitbox.exs")
+      target_file = Path.join(path, "#{timestamp()}_setup_txbox.exs")
       create_directory(path)
       create_file(target_file, generated_file)
     end)

@@ -1,16 +1,16 @@
-defmodule Bitbox.Test.CaseTemplate do
+defmodule Txbox.Test.CaseTemplate do
   @moduledoc false
 
   use ExUnit.CaseTemplate
-  alias Bitbox.Test.Repo
-  import Bitbox.Test.FileHelpers
+  alias Txbox.Test.Repo
+  import Txbox.Test.FileHelpers
 
-  @tmp_dir Path.join(tmp_path(), "bitbox_test")
+  @tmp_dir Path.join(tmp_path(), "txbox_test")
 
   using _opts do
     quote do
-      import Bitbox.Test.CaseTemplate
-      alias Bitbox.Test.Repo
+      import Txbox.Test.CaseTemplate
+      alias Txbox.Test.Repo
     end
   end
 
@@ -21,7 +21,7 @@ defmodule Bitbox.Test.CaseTemplate do
 
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
-    Ecto.Adapters.SQL.Sandbox.mode(Bitbox.Test.Repo, {:shared, self()})
+    Ecto.Adapters.SQL.Sandbox.mode(Txbox.Test.Repo, {:shared, self()})
     :ok
   end
 

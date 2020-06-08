@@ -1,2 +1,2 @@
-{:ok, _pid} = Bitbox.Test.Repo.start_link()
+{:ok, _pid} = Txbox.Test.Repo.start_link()
 ExUnit.start()

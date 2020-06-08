@@ -1,10 +1,10 @@
-defmodule Bitbox.TxStatus.Queue do
+defmodule Txbox.MapiStatus.Queue do
   @moduledoc """
   TODO
   """
   use GenStage
-  alias Bitbox.Transactions
-  alias Bitbox.Transactions.Tx
+  alias Txbox.Transactions
+  alias Txbox.Transactions.Tx
 
 
   @doc """
@@ -27,7 +27,7 @@ defmodule Bitbox.TxStatus.Queue do
 
   @impl true
   def init(_) do
-    queue = Transactions.pending_mapi()
+    queue = Transactions.mapi_pending()
     |> Transactions.all
     |> Qex.new
 

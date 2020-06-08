@@ -1,4 +1,4 @@
-defmodule Bitbox.Transactions.Status do
+defmodule Txbox.Transactions.Status do
   use Ecto.Schema
   import Ecto.Changeset
 

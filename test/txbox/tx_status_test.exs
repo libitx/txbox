@@ -1,8 +1,8 @@
-defmodule Bitbox.TxStatusTest do
-  use Bitbox.Test.CaseTemplate
-  alias Bitbox.Transactions
-  alias Bitbox.Transactions.Tx
-  alias Bitbox.TxStatus.{Queue, Processor}
+defmodule Txbox.MapiStatusTest do
+  use Txbox.Test.CaseTemplate
+  alias Txbox.Transactions
+  alias Txbox.Transactions.Tx
+  alias Txbox.MapiStatus.{Queue, Processor}
 
 
   def fixture(attrs \\ %{}) do
@@ -14,7 +14,7 @@ defmodule Bitbox.TxStatusTest do
   end
 
 
-  describe "Bitbox.TxStatus.Queue" do
+  describe "Txbox.MapiStatus.Queue" do
     setup do
       {:ok, pid} = Queue.start_link
       %{pid: pid, tx1: fixture(), tx2: fixture()}
@@ -33,7 +33,7 @@ defmodule Bitbox.TxStatusTest do
   end
 
 
-  describe "Bitbox.TxStatus.Processor with confirmed tx" do
+  describe "Txbox.MapiStatus.Processor with confirmed tx" do
     setup do
       Tesla.Mock.mock_global fn _env ->
         File.read!("test/mocks/tx-status.json") |> Jason.decode! |> Tesla.Mock.json
@@ -47,7 +47,7 @@ defmodule Bitbox.TxStatusTest do
       tx = fixture()
       Queue.push(tx)
       Process.sleep(50) # quick sleep to allow the async http mock to return
-      tx = Bitbox.Transactions.get(tx.txid)
+      tx = Txbox.Transactions.get(tx.txid)
       assert is_integer(tx.block_height)
       GenStage.stop(pid2)
       GenStage.stop(pid1)

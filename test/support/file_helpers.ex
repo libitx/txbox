@@ -1,13 +1,9 @@
-defmodule Bitbox.Test.FileHelpers do
+defmodule Txbox.Test.FileHelpers do
   @moduledoc false
 
   def tmp_path do
     Path.expand("../../priv/tmp", __DIR__)
   end
-
-  #def tmp_path(path) do
-  #  Path.expand("../../#{path}", __DIR__)
-  #end
 
   def create_dir(path) do
     run_if_abs_path(&File.mkdir_p!/1, path)
@@ -25,7 +21,4 @@ defmodule Bitbox.Test.FileHelpers do
     end
   end
 
-  #def destroy_tmp_dir(path) do
-  #  path |> tmp_path() |> destroy_dir()
-  #end
 end

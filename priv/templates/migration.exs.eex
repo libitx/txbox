@@ -1,9 +1,9 @@
-defmodule <%= module_prefix %>.Repo.Migrations.CreateBitboxTable do
+defmodule <%= module_prefix %>.Repo.Migrations.CreateTxboxTable do
   use Ecto.Migration
 
   def up do
-    # Create the Bitbox tx table
-    create table(:bitbox_txns, primary_key: false) do
+    # Create the Txbox tx table
+    create table(:txbox_txns, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :txid, :string, primary_key: true
       add :rawtx, :binary
@@ -24,18 +24,18 @@ defmodule <%= module_prefix %>.Repo.Migrations.CreateBitboxTable do
 
 
     # Add indexes for common queries and full-text search
-    create index(:bitbox_txns, [:txid])
-    create index(:bitbox_txns, [:channel])
-    create index(:bitbox_txns, [:tags], using: "GIN")
-    create index(:bitbox_txns, [:search_vector], using: "GIN")
-    create index(:bitbox_txns, [:block_height])
-    create index(:bitbox_txns, [:mapi_attempt])
-    create index(:bitbox_txns, [:inserted_at])
+    create index(:txbox_txns, [:txid])
+    create index(:txbox_txns, [:channel])
+    create index(:txbox_txns, [:tags], using: "GIN")
+    create index(:txbox_txns, [:search_vector], using: "GIN")
+    create index(:txbox_txns, [:block_height])
+    create index(:txbox_txns, [:mapi_attempt])
+    create index(:txbox_txns, [:inserted_at])
 
 
     # Create function for populating search vector
     execute """
-      CREATE OR REPLACE FUNCTION bitbox_search_vector_trigger()
+      CREATE OR REPLACE FUNCTION txbox_search_vector_trigger()
       RETURNS trigger AS $$
       BEGIN
         NEW.search_vector := 
@@ -50,18 +50,18 @@ defmodule <%= module_prefix %>.Repo.Migrations.CreateBitboxTable do
 
     # Create trigger for updating search vector
     execute """
-      CREATE TRIGGER bitbox_search_vector_update
+      CREATE TRIGGER txbox_search_vector_update
       BEFORE INSERT OR UPDATE 
-      ON bitbox_txns
+      ON txbox_txns
       FOR EACH ROW
-      EXECUTE PROCEDURE bitbox_search_vector_trigger();
+      EXECUTE PROCEDURE txbox_search_vector_trigger();
     """
   end
 
 
   def down do
-    drop table(:bitbox_txns)
-    execute "DROP FUNCTION IF EXISTS bitbox_search_vector_trigger;"
+    drop table(:txbox_txns)
+    execute "DROP FUNCTION IF EXISTS txbox_search_vector_trigger;"
   end
 
 end

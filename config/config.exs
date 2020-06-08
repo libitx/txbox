@@ -1,13 +1,13 @@
 use Mix.Config
 
-config :bitbox,
-  repo: Bitbox.Test.Repo,
-  ecto_repos: [Bitbox.Test.Repo]
+config :txbox,
+  repo: Txbox.Test.Repo,
+  ecto_repos: [Txbox.Test.Repo]
 
-config :bitbox, Bitbox.Test.Repo,
-  database: "bitbox_test",
+config :txbox, Txbox.Test.Repo,
+  database: "txbox_test",
   pool: Ecto.Adapters.SQL.Sandbox,
-  priv: "priv/tmp/bitbox_test"
+  priv: "priv/tmp/txbox_test"
 
 config :logger, level: :warn
 

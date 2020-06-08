@@ -1,16 +1,7 @@
-defmodule Bitbox.TransactionsTest do
-  use Bitbox.Test.CaseTemplate
-  alias Bitbox.Transactions
-  alias Bitbox.Transactions.{Tx}
-
-  #@tx1 %{
-  #  txid: "d0651c10fde1d4492270b8e8743d4b50111c05eab0d3512484013f2acbf0f41b"
-  #}
-
-  #@tx2 %{
-  #  txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
-  #  channel: "testing"
-  #}
+defmodule Txbox.TransactionsTest do
+  use Txbox.Test.CaseTemplate
+  alias Txbox.Transactions
+  alias Txbox.Transactions.Tx
 
 
   def fixture(attrs \\ %{}) do
@@ -32,7 +23,7 @@ defmodule Bitbox.TransactionsTest do
 
     test "returns a tx", %{tx1: %{txid: txid}} do
       assert %Tx{} = tx = Transactions.get(txid)
-      assert tx.channel == "bitbox"
+      assert tx.channel == "txbox"
       assert tx.meta.title == "test1"
     end
 
@@ -127,20 +118,6 @@ defmodule Bitbox.TransactionsTest do
     test "deletes the given tx", %{tx: tx} do
       assert {:ok, %Tx{}} = Transactions.delete(tx)
       assert Transactions.get(tx.txid) == nil
-    end
-  end
-
-
-  describe "get_unconfirmed_txids/0" do
-    setup do
-      {:ok, tx2} = fixture() |> Transactions.update_status(%{payload: %{block_height: 9000}})
-      %{tx1: fixture(), tx2: tx2}
-    end
-
-    test "returns list of txids", ctx do
-      res = Transactions.get_unconfirmed_txids()
-      assert Enum.map(res, & &1) |>  Enum.member?(ctx.tx1.txid)
-      refute Enum.map(res, & &1) |>  Enum.member?(ctx.tx2.txid)
     end
   end
 
