@@ -1,7 +1,5 @@
 defmodule Txbox.MapiStatus.Processor do
-  @moduledoc """
-  TODO
-  """
+  @moduledoc false
   require Logger
   use GenStage
   alias Txbox.Transactions
@@ -14,8 +12,9 @@ defmodule Txbox.MapiStatus.Processor do
 
 
   @doc """
-  TODO
+  Starts the Queue Processor, linked to the current process.
   """
+  @spec start_link(keyword) :: GenServer.on_start
   def start_link(opts \\ []) do
     GenStage.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -42,6 +41,7 @@ defmodule Txbox.MapiStatus.Processor do
   end
 
 
+  # Query the configured miner for transaction status
   defp check_tx_status(%Tx{txid: txid} = tx, state) do
     with {:ok, env} <- Manic.TX.status(state.miner, txid, as: :envelope),
          {:ok, payload} <- Manic.JSONEnvelope.parse_payload(env)
@@ -61,11 +61,13 @@ defmodule Txbox.MapiStatus.Processor do
     end
   end
 
-  defp requeue_event(%Tx{mapi_attempted_at: attempts} = tx, %{
+
+  # Requeue the transaction unless already confirmed or max tries exceeded
+  defp requeue_event(%Tx{block_height: i, mapi_attempted_at: attempts} = tx, %{
     max_retries: max_retries,
     retry_after: retry_after
   })
-    when attempts < max_retries,
+    when is_nil(i) and attempts < max_retries,
     do: Process.send_after(Queue, {:push, tx}, retry_after)
 
   defp requeue_event(_tx, _state), do: :ok

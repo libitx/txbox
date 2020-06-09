@@ -104,6 +104,13 @@ defmodule Txbox.TransactionsTest do
       assert tx.mapi_completed_at != nil
     end
 
+    test "updates the mapi_attempt count, event when empty update", %{tx: tx} do
+      assert {:ok, %Tx{} = tx} = Transactions.update_tx_status(tx, %{})
+      assert {:ok, %Tx{} = tx} = Transactions.update_tx_status(tx, %{})
+      assert tx.mapi_attempt == 2
+      assert tx.mapi_completed_at == nil
+    end
+
     test "returns Changeset with invalid attributes", %{tx: tx} do
       assert {:error, %Ecto.Changeset{}} = Transactions.update_tx_status(tx, %{payload: ""})
     end

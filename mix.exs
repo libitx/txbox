@@ -10,12 +10,30 @@ defmodule Txbox.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      name: "Txbox",
+      description: "TODO",
+      source_url: "https://github.com/libitx/txbox",
       docs: [
         main: "Txbox",
         groups_for_functions: [
-          Composable: & &1[:group] == :compose,
-          Queries: & &1[:group] == :query
+          "Composable": & &1[:group] == :compose,
+          "Queries": & &1[:group] == :query
+        ],
+        groups_for_modules: [
+          "Schema": [
+            Txbox.Transactions.Tx,
+            Txbox.Transactions.Meta,
+            Txbox.Transactions.Status
+          ]
         ]
+      ],
+      package: [
+        name: "manic",
+        files: ~w(lib .formatter.exs mix.exs priv README.md LICENSE.md),
+        licenses: ["MIT"],
+        links: %{
+          "GitHub" => "https://github.com/libitx/txbox"
+        }
       ]
     ]
   end

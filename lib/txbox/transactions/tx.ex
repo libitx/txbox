@@ -1,13 +1,48 @@
 defmodule Txbox.Transactions.Tx do
+  @moduledoc """
+  Transaction schema module.
+
+  Txbox adds a single table to your database containing all of the transaction,
+  channel and meta data.
+
+  The only required attribute is the `txid`. If no channel is specified, the
+  transaction will be added to the `Txbox.default_channel/0`. Optionally any of
+  the following attributes can be set:
+
+  * `:rawtx` - The raw transaction data. Must be given as a raw `t:binary/0`, not a hex encoded string.
+  * `:tags` - A list of tags which can be used for organising and filtering transactions.
+  * `:meta` - A map containing structured metadata about the transaction. See `t:Txbox.Transactions.Meta.t/0`.
+  * `:data` - A map containing any other arbitarry fields.
+
+  When searching Txbox, the data from `:tags` and `:meta` are incorporated into
+  full text search.
+
+  Txbox automatically syncs the transaction with your configured miner, and
+  updates the `status` attribute with a cached response from the miner's Merchant
+  API. See `t:Txbox.Transactions.Status.t/0`.
+  """
   use Ecto.Schema
   import Ecto.Changeset
   alias Txbox.Transactions.{Meta, Status}
 
 
-  @typedoc "Txbox transaction struct"
+  @typedoc "Transaction schema"
   @type t :: %__MODULE__{
     id: String.t,
-    txid: String.t
+    txid: String.t,
+    rawtx: binary,
+    channel: String.t,
+    tags: list(String.t),
+    meta: Meta.t,
+    data: map,
+    status: Status.t,
+    block_hash: String.t,
+    block_height: integer,
+    mapi_attempt: integer,
+    mapi_attempted_at: DateTime.t,
+    mapi_completed_at: DateTime.t,
+    inserted_at: NaiveDateTime.t,
+    updated_at: NaiveDateTime.t
   }
 
 
@@ -46,6 +81,7 @@ defmodule Txbox.Transactions.Tx do
   end
 
 
+  @doc false
   def status_changeset(tx, attrs) do
     tx
     |> cast(%{status: attrs}, [])
@@ -56,7 +92,7 @@ defmodule Txbox.Transactions.Tx do
   end
 
 
-  # TODO
+  # Puts the block height on the tx, if present in the status payload
   defp put_block_height(%{valid?: true,
     changes: %{
       status: %{
@@ -70,7 +106,7 @@ defmodule Txbox.Transactions.Tx do
   defp put_block_height(changeset), do: changeset
 
 
-  # TODO
+  # Puts mapi attempt counter and timestamp
   defp put_mapi_attempted(%{data: tx} = changeset) do
     now = DateTime.utc_now |> DateTime.truncate(:second)
     changeset
@@ -79,7 +115,7 @@ defmodule Txbox.Transactions.Tx do
   end
 
 
-  # TODO
+  # Puts mapi complete timestamp
   defp put_mapi_completed(%{valid?: true, changes: %{block_height: i}} = changeset)
     when is_integer(i)
   do

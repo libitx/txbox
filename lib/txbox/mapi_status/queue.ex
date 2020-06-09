@@ -1,23 +1,23 @@
 defmodule Txbox.MapiStatus.Queue do
-  @moduledoc """
-  TODO
-  """
+  @moduledoc false
   use GenStage
   alias Txbox.Transactions
   alias Txbox.Transactions.Tx
 
 
   @doc """
-  TODO
+  Starts the Queue process, linked to the current process.
   """
+  @spec start_link(term) :: GenServer.on_start
   def start_link(_opts \\ []) do
     GenStage.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
 
   @doc """
-  TODO
+  Pushes the given transaction to the end of queue.
   """
+  @spec push(Tx.t) :: :ok
   def push(%Tx{} = tx),
     do: GenStage.cast(__MODULE__, {:push, tx})
 
@@ -60,7 +60,7 @@ defmodule Txbox.MapiStatus.Queue do
   end
 
 
-  # TODO
+  # Splits the queue according to the demand, and emits the demanded tx
   defp take_demanded_events(%{queue: queue} = state) do
     demand = :queue.len(queue.data) |> min(state.demand)
     {demanded, queue} = Qex.split(queue, demand)
