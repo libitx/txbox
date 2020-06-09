@@ -15,7 +15,7 @@ defmodule Txbox.Transactions.Status do
 
   @typedoc "Miner status schema"
   @type t :: %__MODULE__{
-    payload: map,
+    payload: Manic.JSONEnvelope.payload,
     public_key: String.t,
     signature: String.t,
     verified: boolean

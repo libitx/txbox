@@ -104,9 +104,9 @@ defmodule Txbox.TransactionsTest do
       assert tx.mapi_completed_at != nil
     end
 
-    test "updates the mapi_attempt count, event when empty update", %{tx: tx} do
-      assert {:ok, %Tx{} = tx} = Transactions.update_tx_status(tx, %{})
-      assert {:ok, %Tx{} = tx} = Transactions.update_tx_status(tx, %{})
+    test "updates the mapi_attempt count when nil given", %{tx: tx} do
+      assert {:ok, %Tx{} = tx} = Transactions.update_tx_status(tx, nil)
+      assert {:ok, %Tx{} = tx} = Transactions.update_tx_status(tx, nil)
       assert tx.mapi_attempt == 2
       assert tx.mapi_completed_at == nil
     end

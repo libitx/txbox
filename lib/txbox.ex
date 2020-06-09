@@ -8,7 +8,7 @@ defmodule Txbox do
   * As Txbox is built on Ecto, you query your own database rather than a containerized HTTP process.
   * Like TXT, Txbox auto-syncs with the [Miner API](https://github.com/bitcoin-sv/merchantapi-reference) of your choice, and caches signed responses.
   * Unlike TXT, no web UI or HTTP API is exposed. Txbox is purely a database schema with query functions - the rest is up to you.
-  * Seamlessly import and export from other TXT-compatible platforms (soon... &tm;).
+  * Seamlessly import and export from other TXT-compatible platforms *(soon... ™)*.
 
   ## Installation
 
@@ -24,8 +24,10 @@ defmodule Txbox do
   Once installed, run the following tasks to generate and run the required
   database migrations.
 
-      mix txbox.gen.migration
-      mix ecto.migrate
+  ```conosle
+  mix txbox.gen.migration
+  mix ecto.migrate
+  ```
 
   Finally, add `Txbox` to your application's supervision tree.
 
@@ -47,9 +49,9 @@ defmodule Txbox do
   Filtering
 
   * `:tagged` - A string or list of strings of tags. The query will expect all given tags to match.
-    * %{tagged: "photos"} - all transactions tagged with "photos"
-    * %{tagged: ["space", "hubble"]} - all transactions tagged with *both* "space" and "hubble"
-    * %{tagged: "space, hubble"} - as above, but given as a comma seperated string
+    * `%{tagged: "photos"}` - all transactions tagged with "photos"
+    * `%{tagged: ["space", "hubble"]}` - all transactions tagged with *both* "space" and "hubble"
+    * `%{tagged: "space, hubble"}` - as above, but given as a comma seperated string
   * `:from` - The block height to filter transactions from.
     * `%{from: 636400}` - all transactions from and including block 636400
   * `:to` - The block height to filter transactions up to.
@@ -108,14 +110,14 @@ defmodule Txbox do
 
   Add a transaction txid within the default channel (`"txbox"`).
 
-      iex> Txbox.add(%{
+      iex> Txbox.set(%{
       ...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110"
       ...> })
       {:ok, %Tx{}}
 
   Add a transaction with associated meta data, within a specified channel.
 
-      iex> Txbox.add("photos", %{
+      iex> Txbox.set("photos", %{
       ...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
       ...>   tags: ["hubble", "universe"],
       ...>   meta: %{
@@ -127,8 +129,8 @@ defmodule Txbox do
       ...> })
       {:ok, %Tx{}}
   """
-  @spec add(String.t, map) :: {:ok, Tx.t} | {:error, Ecto.Changeset.t}
-  def add(channel \\ @default_channel, %{} = attrs) do
+  @spec set(String.t, map) :: {:ok, Tx.t} | {:error, Ecto.Changeset.t}
+  def set(channel \\ @default_channel, %{} = attrs) do
     attrs = Map.put(attrs, :channel, channel)
 
     case Transactions.create_tx(attrs) do
@@ -153,21 +155,21 @@ defmodule Txbox do
 
   Find within the default channel (`"txbox"`)
 
-      iex> Txbox.find("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      iex> Txbox.get("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
       {:ok, %Tx{}}
 
   Find within the specified channel
 
-      iex> Txbox.find("photos", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      iex> Txbox.get("photos", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
       {:ok, %Tx{}}
 
   Find within the global scope
 
-      iex> Txbox.find("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      iex> Txbox.get("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
       {:ok, %Tx{}}
   """
-  @spec find(String.t, String.t) :: {:ok, Tx.t} | {:error, :not_found}
-  def find(channel \\ @default_channel, txid) when is_binary(txid) do
+  @spec get(String.t, String.t) :: {:ok, Tx.t} | {:error, :not_found}
+  def get(channel \\ @default_channel, txid) when is_binary(txid) do
     tx = Tx
     |> Transactions.channel(channel)
     |> Transactions.get_tx(txid)
@@ -183,9 +185,9 @@ defmodule Txbox do
 
 
   @doc false
-  def find_all(query \\ %{})
-  def find_all(query) when is_map(query), do: find_all(@default_channel, query)
-  def find_all(channel) when is_binary(channel), do: find_all(channel, %{})
+  def all(query \\ %{})
+  def all(query) when is_map(query), do: all(@default_channel, query)
+  def all(channel) when is_binary(channel), do: all(channel, %{})
 
   @doc """
   Finds a list of transactions, scoped by the specified channel and/or filtered
@@ -199,6 +201,7 @@ defmodule Txbox do
 
   The accepted query options are: (keys can be atoms or strings)
 
+  * `:search` - Full text search made on trasactions' tags and meta data
   * `:tagged` - Filter transactions by the given tag or tags
   * `:from` - The block height from which to filter transactions by
   * `:to` - The block height to which to filter transactions by
@@ -211,55 +214,31 @@ defmodule Txbox do
 
   Find all transactions from the specified block height in the default channel (`"txbox"`)
 
-      iex> Txbox.find_all(%{from: 636400})
+      iex> Txbox.all(%{from: 636400})
       {:ok, [%Tx{}, ...]}
 
   Find all transactions in the specified channel with a combination of filters
 
-      iex> Txbox.find_all("photos", %{from: 636400, tagged: "hubble", limit: 5})
+      iex> Txbox.all("photos", %{from: 636400, tagged: "hubble", limit: 5})
       {:ok, [%Tx{}, ...]}
 
   Find all transactions in any channel unfiltered
 
-      iex> Txbox.find_all("_")
+      iex> Txbox.all("_")
+      {:ok, [%Tx{}, ...]}
+
+  Make full text search against the transactions' meta data and tag names.
+
+      iex> Txbox.all(%{search: "hubble deep field"})
       {:ok, [%Tx{}, ...]}
   """
-  @spec find_all(String.t, map) :: {:ok, list(Tx.t)}
-  def find_all(channel, %{} = query) do
+  @spec all(String.t, map) :: {:ok, list(Tx.t)}
+  def all(channel, %{} = query) do
     txns = Tx
     |> Transactions.channel(channel)
     |> Transactions.list_tx(query)
 
     {:ok, txns}
   end
-
-
-  @doc """
-  Searches for transactions with the given search term, scoped by the specified
-  channel.
-
-  If the channel is omitted, it defaults to `default_channel/0`. Alernatively,
-  the channel can be specified as `"_"` which is the TXT syntax for the global
-  scope.
-
-  A full text search query is made against the transactions' meta data and tag
-  names.
-
-  ## Examples
-
-      iex> Txbox.search("photos", "hubble deep field")
-      {:ok, [%Tx{}, ...]}
-  """
-  @spec search(String.t, String.t) :: {:ok, list(Tx.t)}
-  def search(channel \\ @default_channel, term) do
-    txns = Tx
-    |> Transactions.channel(channel)
-    |> Transactions.search_tx(term)
-
-    {:ok, txns}
-  end
-
-
-
 
 end

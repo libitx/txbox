@@ -16,7 +16,7 @@ defmodule Txbox.MixProject do
       docs: [
         main: "Txbox",
         groups_for_functions: [
-          "Composable": & &1[:group] == :compose,
+          "Expressions": & &1[:group] == :expression,
           "Queries": & &1[:group] == :query
         ],
         groups_for_modules: [

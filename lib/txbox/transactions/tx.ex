@@ -5,9 +5,9 @@ defmodule Txbox.Transactions.Tx do
   Txbox adds a single table to your database containing all of the transaction,
   channel and meta data.
 
-  The only required attribute is the `txid`. If no channel is specified, the
-  transaction will be added to the `Txbox.default_channel/0`. Optionally any of
-  the following attributes can be set:
+  For any transaction, the only required attribute is the `txid`. If no channel
+  is specified, the transaction will be added to the `Txbox.default_channel/0`.
+  Optionally any of the following attributes can be set:
 
   * `:rawtx` - The raw transaction data. Must be given as a raw `t:binary/0`, not a hex encoded string.
   * `:tags` - A list of tags which can be used for organising and filtering transactions.
@@ -18,7 +18,7 @@ defmodule Txbox.Transactions.Tx do
   full text search.
 
   Txbox automatically syncs the transaction with your configured miner, and
-  updates the `status` attribute with a cached response from the miner's Merchant
+  updates the `:status` attribute with a cached response from the miner's Merchant
   API. See `t:Txbox.Transactions.Status.t/0`.
   """
   use Ecto.Schema
@@ -82,7 +82,13 @@ defmodule Txbox.Transactions.Tx do
 
 
   @doc false
-  def status_changeset(tx, attrs) do
+  def status_changeset(tx, nil) do
+    tx
+    |> cast(%{}, [])
+    |> put_mapi_attempted
+  end
+
+  def status_changeset(tx, %{} = attrs) do
     tx
     |> cast(%{status: attrs}, [])
     |> cast_embed(:status, with: &Status.changeset/2)

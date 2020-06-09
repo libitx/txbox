@@ -56,7 +56,7 @@ defmodule Txbox.MapiStatus.Processor do
     else
       {:error, error} ->
         Logger.error "mAPI error: #{txid} : #{inspect error}"
-        {:ok, tx} = Transactions.update_tx_status(tx, %{})
+        {:ok, tx} = Transactions.update_tx_status(tx, nil)
         requeue_event(tx, state)
     end
   end

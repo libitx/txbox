@@ -1,13 +1,34 @@
 defmodule Txbox.Transactions do
   @moduledoc """
   Collection of functions for composing Ecto queries.
+
+  The functions in this module can be broadly split into two types, expressions
+  and queries.
+
+  ## Expressions
+
+  Expression functions can be used to compose queries following the Elixir
+  pipeline syntax.
+
+      iex> Tx
+      ...> |> Transactions.confirmed(true)
+      ...> |> Transactions.tagged(["space", "photos"])
+      %Ecto.Query{}
+
+  ## Queries
+  
+  Query functions interface with the repo and either create or return records
+  from the repo.
+
+      iex> Transactions.list_tx()
+      [%Tx{}, ...]
   """
   import Ecto.Query, warn: false
   alias Txbox.Transactions.Tx
 
 
   @repo Application.get_env(:txbox, :repo)
-  @query_keys [:tagged, :from, :to, :at, :order, :limit, :offset]
+  @query_keys [:channel, :search, :tagged, :from, :to, :at, :order, :limit, :offset]
 
 
   @doc """
@@ -36,6 +57,11 @@ defmodule Txbox.Transactions do
   end
 
 
+  @doc false
+  def list_tx(), do: @repo.all(Tx)
+  def list_tx(Tx = tx), do: @repo.all(tx)
+  def list_tx(%Ecto.Query{} = tx), do: @repo.all(tx)
+
   @doc """
   Returns a list of transactions.
 
@@ -48,15 +74,6 @@ defmodule Txbox.Transactions do
       iex> txns = Transactions.channel("mychannel)
       ...> |> Transactions.confirmed(true)
       ...> |> Transactions.list_tx
-  """
-  @doc group: :query
-  @spec list_tx(Ecto.Queryable.t) :: list(Ecto.Schema.t)
-  def list_tx(), do: @repo.all(Tx)
-  def list_tx(Tx = tx), do: @repo.all(tx)
-  def list_tx(%Ecto.Query{} = tx), do: @repo.all(tx)
-
-  @doc """
-  TODO
   """
   @doc group: :query
   @spec list_tx(Ecto.Queryable.t, map) :: list(Ecto.Schema.t)
@@ -142,8 +159,7 @@ defmodule Txbox.Transactions do
   @spec search_tx(Ecto.Queryable.t, String.t) :: list(Ecto.Schema.t)
   def search_tx(tx \\ Tx, term) when is_binary(term) do
     tx
-    |> where(fragment("search_vector @@ plainto_tsquery(?)", ^term))
-    |> order_by(fragment("ts_rank(search_vector, plainto_tsquery(?)) DESC", ^term))
+    |> search(term)
     |> list_tx
   end
 
@@ -166,27 +182,37 @@ defmodule Txbox.Transactions do
 
   @doc """
   Query by the given query map.
-
-
   """
-  @doc group: :compose
+  @doc group: :expression
   @spec query(Ecto.Queryable.t, map) :: Ecto.Queryable.t
-  def query(tx, %{} = query) do
-    query
+  def query(tx, %{} = qry) do
+    qry
     |> normalize_query
     |> Enum.reduce(tx, &build_query/2)
   end
 
 
   @doc """
+  Search by the given term.
+  """
+  @doc group: :expression
+  @spec search(Ecto.Queryable.t, map) :: Ecto.Queryable.t
+  def search(tx, term) when is_binary(term) do
+    tx
+    |> where(fragment("search_vector @@ plainto_tsquery(?)", ^term))
+    |> order_by(fragment("ts_rank(search_vector, plainto_tsquery(?)) DESC", ^term))
+  end
+
+
+  @doc """
   Query by the given channel name.
   """
-  @doc group: :compose
+  @doc group: :expression
   @spec channel(Ecto.Queryable.t, binary) :: Ecto.Queryable.t
   def channel(tx, "_"), do: tx
-  def channel(tx, channel)
-    when is_binary(channel),
-    do: where(tx, channel: ^channel)
+  def channel(tx, chan)
+    when is_binary(chan),
+    do: where(tx, channel: ^chan)
 
 
   @doc """
@@ -194,7 +220,7 @@ defmodule Txbox.Transactions do
 
   Optionally tags can be specified as a comma seperated string
   """
-  @doc group: :compose
+  @doc group: :expression
   @spec tagged(Ecto.Queryable.t, list | String.t) :: Ecto.Queryable.t
   def tagged(tx, tags) when is_list(tags),
     do: where(tx, fragment("tags @> ?", ^tags))
@@ -206,7 +232,7 @@ defmodule Txbox.Transactions do
   @doc """
   Query by the transaction confirmation status.
   """
-  @doc group: :compose
+  @doc group: :expression
   @spec confirmed(Ecto.Queryable.t, boolean) :: Ecto.Queryable.t
   def confirmed(tx, conf \\ true)
 
@@ -232,6 +258,10 @@ defmodule Txbox.Transactions do
 
 
   # Composes a query from the given tuple, adding to the existing queryable
+  defp build_query({:search, term}, tx), do: search(tx, term)
+
+  defp build_query({:channel, chan}, tx), do: channel(tx, chan)
+
   defp build_query({:tagged, tags}, tx), do: tagged(tx, tags)
 
   defp build_query({:from, height}, tx),
