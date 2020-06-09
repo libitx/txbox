@@ -27,8 +27,7 @@ defmodule Txbox.MapiStatus.Queue do
 
   @impl true
   def init(_) do
-    queue = Transactions.mapi_pending()
-    |> Transactions.all
+    queue = Transactions.list_pending_tx_for_mapi_check()
     |> Qex.new
 
     state = %{

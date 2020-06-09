@@ -9,7 +9,14 @@ defmodule Txbox.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      docs: [
+        main: "Txbox",
+        groups_for_functions: [
+          Composable: & &1[:group] == :compose,
+          Queries: & &1[:group] == :query
+        ]
+      ]
     ]
   end
 
@@ -25,6 +32,7 @@ defmodule Txbox.MixProject do
     [
       {:ecto, "~> 3.4"},
       {:ecto_sql, "~> 3.4"},
+      {:ex_doc, "~> 0.22", only: :dev, runtime: false},
       {:jason, "~> 1.2"},
       {:gen_stage, "~> 1.0"},
       {:manic, "~> 0.0.3"},

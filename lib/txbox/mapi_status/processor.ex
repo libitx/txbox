@@ -46,7 +46,7 @@ defmodule Txbox.MapiStatus.Processor do
     with {:ok, env} <- Manic.TX.status(state.miner, txid, as: :envelope),
          {:ok, payload} <- Manic.JSONEnvelope.parse_payload(env)
     do
-      {:ok, tx} = Transactions.update_status(tx, %{
+      {:ok, tx} = Transactions.update_tx_status(tx, %{
         payload: payload,
         public_key: env.public_key,
         signature: env.signature,
@@ -56,7 +56,7 @@ defmodule Txbox.MapiStatus.Processor do
     else
       {:error, error} ->
         Logger.error "mAPI error: #{txid} : #{inspect error}"
-        {:ok, tx} = Transactions.update_status(tx, %{})
+        {:ok, tx} = Transactions.update_tx_status(tx, %{})
         requeue_event(tx, state)
     end
   end

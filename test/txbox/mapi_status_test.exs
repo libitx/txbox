@@ -9,7 +9,7 @@ defmodule Txbox.MapiStatusTest do
     txid = :crypto.strong_rand_bytes(32) |> Base.encode16(case: :lower)
     {:ok, tx} = attrs
     |> Map.put(:txid, txid)
-    |> Transactions.create
+    |> Transactions.create_tx
     tx
   end
 
@@ -47,7 +47,7 @@ defmodule Txbox.MapiStatusTest do
       tx = fixture()
       Queue.push(tx)
       Process.sleep(50) # quick sleep to allow the async http mock to return
-      tx = Txbox.Transactions.get(tx.txid)
+      tx = Txbox.Transactions.get_tx(tx.txid)
       assert is_integer(tx.block_height)
       GenStage.stop(pid2)
       GenStage.stop(pid1)

@@ -4,6 +4,13 @@ defmodule Txbox.Transactions.Tx do
   alias Txbox.Transactions.{Meta, Status}
 
 
+  @typedoc "Txbox transaction struct"
+  @type t :: %__MODULE__{
+    id: String.t,
+    txid: String.t
+  }
+
+
   @default_channel "txbox"
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
