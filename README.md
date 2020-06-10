@@ -10,7 +10,7 @@ Txbox is an Elixir implementation of the [TXT Semantic Bitcoin Storage](https://
 * As Txbox is built on Ecto, you query your own database rather than a containerized HTTP process.
 * Like TXT, Txbox auto-syncs with the [Miner API](https://github.com/bitcoin-sv/merchantapi-reference) of your choice, and caches signed responses.
 * Unlike TXT, no web UI or HTTP API is exposed. Txbox is purely a database schema with query functions - the rest is up to you.
-* Seamlessly import and export from other TXT-compatible platforms (soon... &tm;).
+* Coming soon (™) - Seamlessly import and export from other TXT-compatible platforms.
 
 ## Installation
 
