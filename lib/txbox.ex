@@ -1,5 +1,9 @@
 defmodule Txbox do
   @moduledoc """
+  ![Hex.pm](https://img.shields.io/hexpm/v/txbox?color=informational)
+  ![MIT License](https://img.shields.io/github/license/libitx/txbox?color=informational)
+  ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/libitx/txbox/Elixir%20CI)
+
   Txbox is an Elixir implementation of the [TXT Semantic Bitcoin Storage](https://txt.network/)
   schema. Txbox lets you store Bitcoin transactions in your application's
   database with searchable and filterable semantic metadata.
@@ -47,7 +51,7 @@ defmodule Txbox do
   ## Usage
 
   Once up an running, using Txbox is simple. The `Txbox` modules provides three
-  functions for creating and finding transactions: `set/2`, 'get/2', and `all/2`.
+  functions for creating and finding transactions: `set/2`, `get/2`, and `all/2`.
 
   To add a transaction to Txbox, the minimum required is to give a `txid`.
 
@@ -106,7 +110,7 @@ defmodule Txbox do
       ...> })
       {:ok, [%Tx{}, ...]}
 
-  ## Filtering and searching
+  ### Filtering and searching
 
   Txbox adopts the same syntax and query modifiers [used by TXT](https://txt.network/#/?id=c-queries).
   Txbox automatically normalizes the query map, so keys can be specifiied either
