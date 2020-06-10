@@ -12,3 +12,11 @@ config :txbox, Txbox.Test.Repo,
 config :logger, level: :warn
 
 config :tesla, adapter: Tesla.Mock
+
+
+# Configure the database for GitHub Actions
+if System.get_env("GITHUB_ACTIONS") do
+  config :txbox, Txbox.Test.Repo,
+    username: "postgres",
+    password: "postgres"
+end
