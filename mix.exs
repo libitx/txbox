@@ -28,7 +28,7 @@ defmodule Txbox.MixProject do
         ]
       ],
       package: [
-        name: "manic",
+        name: "txbox",
         files: ~w(lib .formatter.exs mix.exs priv README.md LICENSE.md),
         licenses: ["MIT"],
         links: %{
