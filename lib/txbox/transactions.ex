@@ -16,7 +16,7 @@ defmodule Txbox.Transactions do
       %Ecto.Query{}
 
   ## Queries
-  
+
   Query functions interface with the repo and either create or return records
   from the repo.
 
@@ -59,6 +59,7 @@ defmodule Txbox.Transactions do
 
   @doc false
   def list_tx(), do: @repo.all(Tx)
+  @doc false
   def list_tx(Tx = tx), do: @repo.all(tx)
   def list_tx(%Ecto.Query{} = tx), do: @repo.all(tx)
 
@@ -280,11 +281,19 @@ defmodule Txbox.Transactions do
 
   defp build_query({:order, "created_at"}, tx),
     do: order_by(tx, asc: :inserted_at)
+  defp build_query({:order, "inserted_at"}, tx),
+    do: order_by(tx, asc: :inserted_at)
   defp build_query({:order, "-created_at"}, tx),
+    do: order_by(tx, desc: :inserted_at)
+  defp build_query({:order, "-inserted_at"}, tx),
     do: order_by(tx, desc: :inserted_at)
   defp build_query({:order, "i"}, tx),
     do: order_by(tx, asc: :block_height)
+  defp build_query({:order, "block_height"}, tx),
+    do: order_by(tx, asc: :block_height)
   defp build_query({:order, "-i"}, tx),
+    do: order_by(tx, desc: :block_height)
+  defp build_query({:order, "-block_height"}, tx),
     do: order_by(tx, desc: :block_height)
 
   defp build_query({:order, _order}, tx), do: tx

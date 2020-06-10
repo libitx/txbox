@@ -8,7 +8,7 @@ defmodule Txbox do
   * As Txbox is built on Ecto, you query your own database rather than a containerized HTTP process.
   * Like TXT, Txbox auto-syncs with the [Miner API](https://github.com/bitcoin-sv/merchantapi-reference) of your choice, and caches signed responses.
   * Unlike TXT, no web UI or HTTP API is exposed. Txbox is purely a database schema with query functions - the rest is up to you.
-  * Seamlessly import and export from other TXT-compatible platforms *(soon... ™)*.
+  * Coming soon (™) - Seamlessly import and export from other TXT-compatible platforms.
 
   ## Installation
 
@@ -46,24 +46,94 @@ defmodule Txbox do
 
   ## Usage
 
-  Filtering
+  Once up an running, using Txbox is simple. The `Txbox` modules provides three
+  functions for creating and finding transactions: `set/2`, 'get/2', and `all/2`.
 
-  * `:tagged` - A string or list of strings of tags. The query will expect all given tags to match.
+  To add a transaction to Txbox, the minimum required is to give a `txid`.
+
+      iex> Txbox.set(%{
+      ...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110"
+      ...> })
+      {:ok, %Tx{}}
+
+  Once a transaction is added, Txbox automatically syncs with the Miner API of
+  your choice, updating the transaction's status until it is confirmed in a block.
+
+  When a channel name is ommitted, transactions are added to the `default_channel/0`
+  (`"txbox"`), but by specifiying a channel name as the first argument, that
+  transaction will be added to that channel. You can provide additional metadata
+  about the transaction, as well as attach the raw transaction binary.
+
+      iex> Txbox.set("photos", %{
+      ...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
+      ...>   rawtx: <<...>>,
+      ...>   tags: ["hubble", "universe"],
+      ...>   meta: %{
+      ...>     title: "Hubble Ultra-Deep Field"
+      ...>   },
+      ...>   data: %{
+      ...>     bitfs: "https://x.bitfs.network/6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110.out.0.3"
+      ...>   }
+      ...> })
+      {:ok, %Tx{}}
+
+  The transaction can be retrieved by the `txid` too.
+
+      iex> Txbox.get("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      {:ok, %Tx{}}
+
+  As before, omitting the channel scopes the query to the `default_channel/0`
+  (`"txbox"`). Alterntively you can pass the channel name as the first argument,
+  or use `"_"` which is the TXT syntax for global scope.
+
+      iex> Txbox.get("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      {:ok, %Tx{}}
+
+  A list of transactions can be returned using `all/2`. The second parameter
+  must be a `t:map/0` of query parameters to filter and search by.
+
+      iex> Txbox.all("photos", %{
+      ...>   from: 636400,
+      ...>   tagged: "hubble",
+      ...>   limit: 5
+      ...> })
+      {:ok, [%Tx{}, ...]}
+
+  A full text search can be made by using the `:search` filter parameter.
+
+      iex> Txbox.all("_", %{
+      ...>   search: "hubble deep field"
+      ...> })
+      {:ok, [%Tx{}, ...]}
+
+  ## Filtering and searching
+
+  Txbox adopts the same syntax and query modifiers [used by TXT](https://txt.network/#/?id=c-queries).
+  Txbox automatically normalizes the query map, so keys can be specifiied either
+  as atoms or strings. Here are a few examples:
+
+  * `:search` - Full text search made on trasactions' tags and meta data
+    * `%{search: "hubble deep field"}`
+  * `:tagged` - Filter transactions by the given tag or tags
     * `%{tagged: "photos"}` - all transactions tagged with "photos"
     * `%{tagged: ["space", "hubble"]}` - all transactions tagged with *both* "space" and "hubble"
     * `%{tagged: "space, hubble"}` - as above, but given as a comma seperated string
-  * `:from` - The block height to filter transactions from.
+  * `:from` - The block height from which to filter transactions by
     * `%{from: 636400}` - all transactions from and including block 636400
-  * `:to` - The block height to filter transactions up to.
+  * `:to` - The block height to which to filter transactions by
     * `%{to: 636800}` - all transactions upto and including block 636800
     * `%{from: 636400, to: 636800}` - all transactions in the range 636400 to 636800
-  * `:at` - The block height to filter transactions at exactly.
+  * `:at` - The block height at which to filter transactions by exactly
     * `%{at: 636500}` - all transactions at block 636500
     * `%{at: "null"}` - all transactions without a block height (unconfirmed)
     * `%{at: "!null"}` - all transactions with any block height (confirmed)
-  * `:order`
-  * `:limit`
-  * `:offset`
+  * `:order` - The attribute to sort transactions by
+    * `%{order: "i"}` - sort by block height in ascending order
+    * `%{order: "-i"}` - sort by block height in descending order
+    * `%{order: "created_at"}` - sort by insertion time in ascending order
+    * `%{order: "-created_at"}` - sort by insertion time in descending order
+  * `:limit` - The maximum number of transactions to return
+  * `:offset` - The start offset from which to return transactions (for pagination)
   """
   @doc false
   use Supervisor
