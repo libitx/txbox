@@ -27,8 +27,18 @@ defmodule Txbox.Transactions do
   alias Txbox.Transactions.Tx
 
 
-  @repo Application.get_env(:txbox, :repo)
   @query_keys [:channel, :search, :tagged, :from, :to, :at, :order, :limit, :offset]
+
+
+  @doc """
+  Returns the application's configured Repo.
+
+  Ensure your application's Repo is configured in `config.exs`:
+
+      config :txbox, repo: MyApp.Repo
+  """
+  @spec repo() :: module
+  def repo(), do: Application.get_env(:txbox, :repo)
 
 
   @doc """
@@ -51,17 +61,17 @@ defmodule Txbox.Transactions do
   @spec get_tx(Ecto.Queryable.t, binary) :: Ecto.Schema.t | nil
   def get_tx(tx \\ Tx, id) when is_binary(id) do
     case String.match?(id, ~r/^[a-f0-9]{64}$/i) do
-      true -> @repo.get_by(tx, txid: id)
-      false -> @repo.get(tx, id)
+      true -> repo().get_by(tx, txid: id)
+      false -> repo().get(tx, id)
     end
   end
 
 
   @doc false
-  def list_tx(), do: @repo.all(Tx)
+  def list_tx(), do: repo().all(Tx)
   @doc false
-  def list_tx(Tx = tx), do: @repo.all(tx)
-  def list_tx(%Ecto.Query{} = tx), do: @repo.all(tx)
+  def list_tx(Tx = tx), do: repo().all(tx)
+  def list_tx(%Ecto.Query{} = tx), do: repo().all(tx)
 
   @doc """
   Returns a list of transactions.
@@ -81,7 +91,7 @@ defmodule Txbox.Transactions do
   def list_tx(tx \\ Tx, params) when is_map(params) do
     tx
     |> query(%{} = params)
-    |> @repo.all
+    |> repo().all
   end
 
 
@@ -102,7 +112,7 @@ defmodule Txbox.Transactions do
   def create_tx(attrs \\ %{}) do
     %Tx{}
     |> Tx.changeset(attrs)
-    |> @repo.insert()
+    |> repo().insert()
   end
 
 
@@ -126,7 +136,7 @@ defmodule Txbox.Transactions do
   def update_tx_status(%Tx{} = tx, attrs \\ %{}) do
     tx
     |> Tx.status_changeset(attrs)
-    |> @repo.update()
+    |> repo().update()
   end
 
 
@@ -143,7 +153,7 @@ defmodule Txbox.Transactions do
   @doc group: :query
   @spec delete_tx(Ecto.Schema.t) :: {:ok, Ecto.Schema.t} | {:error, Ecto.Changeset.t()}
   def delete_tx(%Tx{} = tx),
-    do: @repo.delete(tx)
+    do: repo().delete(tx)
 
 
   @doc """
@@ -197,7 +207,7 @@ defmodule Txbox.Transactions do
   Search by the given term.
   """
   @doc group: :expression
-  @spec search(Ecto.Queryable.t, map) :: Ecto.Queryable.t
+  @spec search(Ecto.Queryable.t, String.t) :: Ecto.Queryable.t
   def search(tx, term) when is_binary(term) do
     tx
     |> where(fragment("search_vector @@ plainto_tsquery(?)", ^term))

@@ -33,6 +33,12 @@ defmodule Txbox do
   mix ecto.migrate
   ```
 
+  Update your application's configuration, making sure Txbox knows which Repo to
+  use.
+
+      # config/config.exs
+      config :txbox, repo: MyApp.Repo
+
   Finally, add `Txbox` to your application's supervision tree.
 
       children = [

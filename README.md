@@ -32,6 +32,13 @@ mix txbox.gen.migration
 mix ecto.migrate
 ```
 
+Update your application's configuration, making sure Txbox knows which Repo to use.
+
+```elixir
+# config/config.exs
+config :txbox, repo: MyApp.Repo
+```      
+
 Finally, add `Txbox` to your application's supervision tree.
 
 ```elixir
