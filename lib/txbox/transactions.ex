@@ -248,10 +248,10 @@ defmodule Txbox.Transactions do
   def confirmed(tx, conf \\ true)
 
   def confirmed(tx, true),
-    do: where(tx, [t], not is_nil(t.block_height))
+    do: where(tx, [t], t.block_height > 0)
 
   def confirmed(tx, false),
-    do: where(tx, [t], is_nil(t.block_height))
+    do: where(tx, [t], is_nil(t.block_height) or t.block_height == 0)
 
 
   # Normalizes a query map by converting all keys to strings, taking the
