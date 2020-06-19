@@ -63,8 +63,8 @@ defmodule Txbox.Transactions.Tx do
     field :mapi_attempted_at, :utc_datetime
     field :mapi_completed_at, :utc_datetime
 
-    embeds_one :meta, Meta
-    embeds_one :status, Status
+    embeds_one :meta, Meta, on_replace: :update
+    embeds_one :status, Status, on_replace: :update
 
     timestamps()
   end
