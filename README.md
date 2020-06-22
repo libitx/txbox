@@ -61,6 +61,8 @@ Supervisor.start_link(children, strategy: :one_for_one)
 
 ## Usage
 
+For detailed examples, refer to the [full documentation](https://hexdocs.pm/txbox).
+
 Once up an running, using Txbox is simple. The `Txbox` modules provides three functions for creating and finding transactions: `set/2`, `get/2`, and `all/2`.
 
 To add a transaction to Txbox, the minimum required is to give a `txid`.
@@ -145,6 +147,8 @@ Txbox adopts the same syntax and query modifiers [used by TXT](https://txt.netwo
   * `%{order: "-created_at"}` - sort by insertion time in descending order
 * `:limit` - The maximum number of transactions to return
 * `:offset` - The start offset from which to return transactions (for pagination)
+
+For more examples, refer to the [full documentation](https://hexdocs.pm/txbox).
 
 ## License
 
