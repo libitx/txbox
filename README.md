@@ -66,10 +66,9 @@ Once up an running, using Txbox is simple. The `Txbox` modules provides three fu
 To add a transaction to Txbox, the minimum required is to give a `txid`.
 
 ```elixir
-iex> Txbox.set(%{
-...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110"
-...> })
-{:ok, %Tx{}}
+Txbox.set(%{
+  txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110"
+})
 ```
 
 Once a transaction is added, Txbox automatically syncs with the Miner API of your choice, updating the transaction's status until it is confirmed in a block.
@@ -77,52 +76,47 @@ Once a transaction is added, Txbox automatically syncs with the Miner API of you
 When a channel name is ommitted, transactions are added to the `default_channel/0` (`"txbox"`), but by specifiying a channel name as the first argument, that transaction will be added to that channel. You can provide additional metadata about the transaction, as well as attach the raw transaction binary.
 
 ```elixir
-iex> Txbox.set("photos", %{
-...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
-...>   rawtx: <<...>>,
-...>   tags: ["hubble", "universe"],
-...>   meta: %{
-...>     title: "Hubble Ultra-Deep Field"
-...>   },
-...>   data: %{
-...>     bitfs: "https://x.bitfs.network/6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110.out.0.3"
-...>   }
-...> })
-{:ok, %Tx{}}
+Txbox.set("photos", %{
+  txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
+  rawtx: <<...>>,
+  tags: ["hubble", "universe"],
+  meta: %{
+    title: "Hubble Ultra-Deep Field"
+  },
+  data: %{
+    bitfs: "https://x.bitfs.network/6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110.out.0.3"
+  }
+})
 ```
 
 The transaction can be retrieved by the `txid` too.
 
 ```elixir
-iex> Txbox.get("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
-{:ok, %Tx{}}
+Txbox.get("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
 ```
 
 As before, omitting the channel scopes the query to the `default_channel/0` (`"txbox"`). Alterntively you can pass the channel name as the first argument, or use `"_"` which is the TXT syntax for global scope.
 
 ```elixir
-iex> Txbox.get("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
-{:ok, %Tx{}}
+Txbox.get("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
 ```
 
 A list of transactions can be returned using `all/2`. The second parameter must be a `t:map/0` of query parameters to filter and search by.
 
 ```elixir
-iex> Txbox.all("photos", %{
-...>   from: 636400,
-...>   tagged: "hubble",
-...>   limit: 5
-...> })
-{:ok, [%Tx{}, ...]}
+Txbox.all("photos", %{
+  from: 636400,
+  tagged: "hubble",
+  limit: 5
+})
 ```
 
 A full text search can be made by using the `:search` filter parameter.
 
 ```elixir
-iex> Txbox.all("_", %{
-...>   search: "hubble deep field"
-...> })
-{:ok, [%Tx{}, ...]}
+Txbox.all("_", %{
+  search: "hubble deep field"
+})
 ```
 
 ### Filtering and searching
