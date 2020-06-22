@@ -1,15 +1,18 @@
 defmodule Txbox do
   @moduledoc """
+  ![Elixir Bitcoin Tx storage schema](https://github.com/libitx/txbox/raw/master/media/poster.png)
+
   ![Hex.pm](https://img.shields.io/hexpm/v/txbox?color=informational)
   ![MIT License](https://img.shields.io/github/license/libitx/txbox?color=informational)
   ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/libitx/txbox/Elixir%20CI)
 
-  Txbox is an Elixir implementation of the [TXT Semantic Bitcoin Storage](https://txt.network/)
-  schema. Txbox lets you store Bitcoin transactions in your application's
-  database with searchable and filterable semantic metadata.
+  Txbox is a Bitcoin transaction storage schema, based on [TXT](https://txt.network/).
+  Txbox lets you store Bitcoin transactions in your application's database with
+  searchable and filterable semantic metadata.
 
   * 100% compatible with TXT, with near identical schema design and API for searching and filtering.
   * As Txbox is built on Ecto, you query your own database rather than a containerized HTTP process.
+  * Create associations with any other data from your app's domain.
   * Like TXT, Txbox auto-syncs with the [Miner API](https://github.com/bitcoin-sv/merchantapi-reference) of your choice, and caches signed responses.
   * Unlike TXT, no web UI or HTTP API is exposed. Txbox is purely a database schema with query functions - the rest is up to you.
   * Coming soon (™) - Seamlessly import and export from other TXT-compatible platforms.
