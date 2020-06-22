@@ -130,7 +130,7 @@ defmodule Txbox.Transactions do
       ...> })
   """
   @doc group: :query
-  @spec update_tx_status(Ecto.Schema.t, map) ::
+  @spec update_tx_status(Ecto.Schema.t, map | nil) ::
     {:ok, Ecto.Schema.t} |
     {:error, Ecto.Changeset.t()}
   def update_tx_status(%Tx{} = tx, attrs \\ %{}) do
