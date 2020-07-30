@@ -1,4 +1,4 @@
-defmodule <%= module_prefix %>.Repo.Migrations.CreateTxboxTable do
+defmodule <%= module_prefix %>.Repo.Migrations.SetupTxBox do
   use Ecto.Migration
 
   def up do

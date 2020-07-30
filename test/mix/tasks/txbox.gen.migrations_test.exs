@@ -1,9 +1,9 @@
-defmodule Mix.Tasks.Txbox.Gen.MigrationTest do
+defmodule Mix.Tasks.Txbox.Gen.MigrationsTest do
   use ExUnit.Case, async: true
-  import Mix.Tasks.Txbox.Gen.Migration, only: [run: 1]
+  import Mix.Tasks.Txbox.Gen.Migrations, only: [run: 1]
   import Txbox.Test.FileHelpers
 
-  @tmp_path Path.join(tmp_path(), inspect(Txbox.Gen.Migration))
+  @tmp_path Path.join(tmp_path(), inspect(Txbox.Gen.Migrations))
   @migrations_path Path.join(@tmp_path, "migrations")
 
   defmodule My.Repo do
@@ -12,7 +12,7 @@ defmodule Mix.Tasks.Txbox.Gen.MigrationTest do
     end
 
     def config do
-      [priv: Path.join("priv/tmp", inspect(Txbox.Gen.Migration)), otp_app: :txbox]
+      [priv: Path.join("priv/tmp", inspect(Txbox.Gen.Migrations)), otp_app: :txbox]
     end
   end
 

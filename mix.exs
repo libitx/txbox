@@ -68,7 +68,7 @@ defmodule Txbox.MixProject do
       test: [
         "ecto.drop --quiet",
         "ecto.create --quiet",
-        "txbox.gen.migration",
+        "txbox.gen.migrations",
         "ecto.migrate",
         "test"
       ]

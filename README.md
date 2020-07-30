@@ -31,7 +31,7 @@ end
 Once installed, run the following tasks to generate and run the required database migrations.
 
 ```console
-mix txbox.gen.migration
+mix txbox.gen.migrations
 mix ecto.migrate
 ```
 

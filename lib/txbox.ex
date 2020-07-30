@@ -32,7 +32,7 @@ defmodule Txbox do
   database migrations.
 
   ```conosle
-  mix txbox.gen.migration
+  mix txbox.gen.migrations
   mix ecto.migrate
   ```
 
