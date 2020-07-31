@@ -23,26 +23,23 @@ defmodule Txbox.Transactions.Tx do
   """
   use Ecto.Schema
   import Ecto.Changeset
-  alias Txbox.Transactions.{Meta, Status}
+  alias Txbox.Transactions.{Meta, MapiResponse, Status}
 
 
   @typedoc "Transaction schema"
   @type t :: %__MODULE__{
-    id: String.t,
+    id: binary,
+    state: String.t,
     txid: String.t,
     rawtx: binary,
     channel: String.t,
     tags: list(String.t),
     meta: Meta.t,
     data: map,
-    status: Status.t,
-    block_hash: String.t,
     block_height: integer,
-    mapi_attempt: integer,
     mapi_attempted_at: DateTime.t,
-    mapi_completed_at: DateTime.t,
-    inserted_at: NaiveDateTime.t,
-    updated_at: NaiveDateTime.t
+    inserted_at: DateTime.t,
+    updated_at: DateTime.t
   }
 
 
@@ -51,20 +48,18 @@ defmodule Txbox.Transactions.Tx do
   @foreign_key_type :binary_id
 
   schema "txbox_txns" do
+    field :state, :string
     field :txid, :string
     field :rawtx, :binary
     field :channel, :string, default: @default_channel
     field :tags, {:array, :string}
     field :data, :map
-    field :block_hash, :string
     field :block_height, :integer
-
-    field :mapi_attempt, :integer, default: 0
     field :mapi_attempted_at, :utc_datetime
-    field :mapi_completed_at, :utc_datetime
 
     embeds_one :meta, Meta, on_replace: :update
-    embeds_one :status, Status, on_replace: :update
+    has_many :mapi_responses, MapiResponse
+    has_one :mapi_status, MapiResponse
 
     timestamps()
   end

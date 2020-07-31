@@ -1,0 +1,33 @@
+defmodule <%= module_prefix %>.Repo.Migrations.CreateTxBoxMapiResponses do
+  use Ecto.Migration
+
+  def change do
+    # Create the Txbox MAPI Responses table
+    create table(:txbox_mapi_responses, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :type, :string
+      add :payload, :map
+      add :public_key, :string
+      add :signature, :string
+      add :verified, :boolean
+      add :tx_id, references(:txbox_txns, type: :binary_id, on_delete: :delete_all)
+
+      timestamps(type: :utc_datetime, updated_at: false)
+    end
+
+    # Add indexes
+    create index(:txbox_mapi_responses, [:tx_id])
+    create index(:txbox_mapi_responses, ["inserted_at DESC"])
+
+    # Make adjustments to Txbox tx table
+    alter table(:txbox_txns) do
+      remove :block_hash, :string
+      remove :mapi_attempt, :integer
+      remove :mapi_completed_at, :utc_datetime
+      remove :status, :map
+      add :state, :string
+    end
+    create index(:txbox_txns, [:state])
+  end
+
+end

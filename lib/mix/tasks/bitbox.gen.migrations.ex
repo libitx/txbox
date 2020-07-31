@@ -23,7 +23,8 @@ defmodule Mix.Tasks.Txbox.Gen.Migrations do
       |> Path.join("priv/templates/migrations/*.exs.eex")
       |> Path.wildcard
       |> Enum.filter(& target_nonexistent?(&1, path))
-      |> Enum.each(& copy_migration(&1, path))
+      |> Enum.with_index
+      |> Enum.each(fn {m, n} -> copy_migration(m, path, n) end)
     end)
   end
 
@@ -38,12 +39,12 @@ defmodule Mix.Tasks.Txbox.Gen.Migrations do
     |> Enum.empty?
   end
 
-  defp copy_migration(source_path, target_path) do
+  defp copy_migration(source_path, target_path, n) do
     basename = source_path
     |> Path.basename(".exs.eex")
     |> String.replace(~r/^\d_/, "")
 
-    target_file = Path.join(target_path, "#{timestamp()}_#{basename}.exs")
+    target_file = Path.join(target_path, "#{timestamp(n)}_#{basename}.exs")
     generated_file = EEx.eval_file(source_path, module_prefix: app_module())
     create_file(target_file, generated_file)
   end
@@ -55,9 +56,9 @@ defmodule Mix.Tasks.Txbox.Gen.Migrations do
     |> Macro.camelize()
   end
 
-  defp timestamp do
+  defp timestamp(n) do
     {{y, m, d}, {hh, mm, ss}} = :calendar.universal_time()
-    "#{y}#{pad(m)}#{pad(d)}#{pad(hh)}#{pad(mm)}#{pad(ss)}"
+    "#{y}#{pad(m)}#{pad(d)}#{pad(hh)}#{pad(mm)}#{pad(ss + n)}"
   end
 
   defp pad(i) when i < 10, do: <<?0, ?0 + i>>

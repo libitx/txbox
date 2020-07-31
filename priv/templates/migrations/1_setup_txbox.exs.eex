@@ -5,7 +5,7 @@ defmodule <%= module_prefix %>.Repo.Migrations.SetupTxBox do
     # Create the Txbox tx table
     create table(:txbox_txns, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :txid, :string, primary_key: true
+      add :txid, :string
       add :rawtx, :binary
       add :channel, :string
       add :tags, {:array, :string}
@@ -19,12 +19,12 @@ defmodule <%= module_prefix %>.Repo.Migrations.SetupTxBox do
       add :mapi_attempted_at, :utc_datetime
       add :mapi_completed_at, :utc_datetime
       
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
 
     # Add indexes for common queries and full-text search
-    create index(:txbox_txns, [:txid])
+    create index(:txbox_txns, [:txid], unique: true)
     create index(:txbox_txns, [:channel])
     create index(:txbox_txns, [:tags], using: "GIN")
     create index(:txbox_txns, [:search_vector], using: "GIN")

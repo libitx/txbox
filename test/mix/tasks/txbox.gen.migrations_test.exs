@@ -24,7 +24,8 @@ defmodule Mix.Tasks.Txbox.Gen.MigrationsTest do
 
   test "generates a new migration" do
     run(["-r", to_string(My.Repo)])
-    assert [name] = File.ls!(@migrations_path)
-    assert String.match?(name, ~r/^\d{14}_setup_txbox\.exs$/)
+    files = File.ls!(@migrations_path)
+    assert Enum.any?(files, & String.match?(&1, ~r/^\d{14}_setup_txbox\.exs$/))
+    assert Enum.any?(files, & String.match?(&1, ~r/^\d{14}_create_txbox_mapi_responses\.exs$/))
   end
 end
