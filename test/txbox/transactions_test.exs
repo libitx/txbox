@@ -1,7 +1,7 @@
 defmodule Txbox.TransactionsTest do
   use Txbox.Test.CaseTemplate
   alias Txbox.Transactions
-  alias Txbox.Transactions.Tx
+  alias Txbox.Transactions.{Tx, MapiResponse}
 
 
   def fixture(attrs \\ %{}) do
@@ -83,37 +83,68 @@ defmodule Txbox.TransactionsTest do
   end
 
 
-  describe "update_tx_status/2" do
-    @describetag skip: "Skipping these tests whilst Transactions.update_tx_status/2 being refactored"
+  describe "update_tx/2" do
+    setup do
+      %{tx: fixture(%{data: %{foo: "bar"}})}
+    end
+
+    test "returns updated Tx with valid attributes", ctx do
+      {:ok, %Tx{} = tx} = Transactions.update_tx(ctx.tx, %{channel: "foobar", data: %{qux: "baz"}})
+      assert tx.channel == "foobar"
+      assert tx.data == %{qux: "baz"}
+    end
+
+    test "returns Changeset with invalid attributes", ctx do
+      assert {:error, %Ecto.Changeset{}} = Transactions.update_tx(ctx.tx, %{txid: "foobar"})
+    end
+  end
+
+  describe "update_tx_state/2" do
+    setup do
+      %{tx: fixture()}
+    end
+
+    test "returns updated Tx with allowed state change", ctx do
+      assert {:ok, %Tx{state: "pushed"}} = Transactions.update_tx_state(ctx.tx, "pushed")
+    end
+
+    test "returns Changeset if try to set invalid state", ctx do
+      assert {:error, %Ecto.Changeset{}} = Transactions.update_tx_state(ctx.tx, "confirmed")
+    end
+  end
+
+  describe "update_tx_state/3" do
     setup do
       %{
-        tx: fixture(),
+        tx1: fixture(),
+        tx2: fixture(%{state: "pending"}),
+        tx3: fixture(%{state: "pushed"}),
         status: %{payload: %{foo: :bar}}
       }
     end
 
-    test "returns Tx and updates mapi attributes with valid attributes", %{tx: tx, status: status} do
-      assert {:ok, %Tx{} = tx} = Transactions.update_tx_status(tx, status)
-      assert tx.mapi_attempt == 1
-      assert tx.mapi_attempted_at != nil
-      assert tx.mapi_completed_at == nil
-      assert tx.status.payload == %{foo: :bar}
+    test "returns updated Tx with allowed state change and valid status attributes", ctx do
+      assert {:ok, %Tx{} = tx} = Transactions.update_tx_state(ctx.tx2, "pushed", ctx.status)
+      assert tx.state == "pushed"
+      assert tx.mapi_status.payload == %{"foo" => "bar"}
     end
 
-    test "returns Tx and completes mapi status with correct attributes", %{tx: tx} do
-      assert {:ok, %Tx{} = tx} = Transactions.update_tx_status(tx, %{payload: %{block_height: 100}})
-      assert tx.mapi_completed_at != nil
+    test "returns Changeset with invalid state change", ctx do
+      assert {:error, %{tx: %Ecto.Changeset{}}} = Transactions.update_tx_state(ctx.tx1, "confirmed", ctx.status)
     end
 
-    test "updates the mapi_attempt count when nil given", %{tx: tx} do
-      assert {:ok, %Tx{} = tx} = Transactions.update_tx_status(tx, nil)
-      assert {:ok, %Tx{} = tx} = Transactions.update_tx_status(tx, nil)
-      assert tx.mapi_attempt == 2
-      assert tx.mapi_completed_at == nil
+    test "returns Changeset with invalid status attributes", %{tx2: tx} do
+      assert {:error, %{mapi_response: %Ecto.Changeset{}}} = Transactions.update_tx_state(tx, "pushed", %{payload: ""})
     end
 
-    test "returns Changeset with invalid attributes", %{tx: tx} do
-      assert {:error, %Ecto.Changeset{}} = Transactions.update_tx_status(tx, %{payload: ""})
+    test "always returns the most resent mapi response", %{tx3: tx} do
+      assert {:ok, %Tx{} = tx} = Transactions.update_tx_state(tx, "pushed", %{payload: %{i: 1}})
+      :timer.sleep(1) # pause to ensure inserted_at timestamp increments by nanosecond
+      assert {:ok, %Tx{} = tx} = Transactions.update_tx_state(tx, "pushed", %{payload: %{i: 2}})
+      :timer.sleep(1) # pause to ensure inserted_at timestamp increments by nanosecond
+      assert {:ok, %Tx{} = tx} = Transactions.update_tx_state(tx, "confirmed", %{payload: %{i: 3}})
+      assert tx.state == "confirmed"
+      assert tx.mapi_status.payload == %{"i" => 3}
     end
   end
 
@@ -126,6 +157,47 @@ defmodule Txbox.TransactionsTest do
     test "deletes the given tx", %{tx: tx} do
       assert {:ok, %Tx{}} = Transactions.delete_tx(tx)
       assert Transactions.get_tx(tx.txid) == nil
+    end
+  end
+
+
+  describe "list_tx_for_mapi/0" do
+    setup do
+      mapi = %{payload: %{foo: :bar}}
+      tx1 = fixture(%{state: "draft", data: %{n: "tx1"}})
+      tx2 = fixture(%{state: "pending", data: %{n: "tx2"}})
+      {:ok, tx3} = fixture(%{state: "pending", data: %{n: "tx3"}}) |> Transactions.update_tx_state("failed", mapi)
+      tx4 = fixture(%{state: "pushed", data: %{n: "tx4"}})
+      {:ok, tx5} = fixture(%{state: "pushed", data: %{n: "tx5"}}) |> Transactions.update_tx_state("pushed", mapi)
+      {:ok, tx6} = fixture(%{state: "pushed", data: %{n: "tx6"}}) |> Transactions.update_tx_state("confirmed", mapi)
+      tx7 = Enum.reduce(1..20, fixture(%{state: "pushed", data: %{n: "tx7"}}), fn _n, tx ->
+        case Transactions.update_tx_state(tx, "pushed", mapi) do
+          {:ok, tx} -> tx
+          {:error, error} -> raise error
+        end
+      end)
+
+      %{tx1: tx1, tx2: tx2, tx3: tx3, tx4: tx4, tx5: tx5, tx6: tx6, tx7: tx7}
+    end
+
+    test "returns the correct transactions according the the rules", ctx do
+      txns = Transactions.list_tx_for_mapi()
+      txids = Enum.map(txns, & &1.txid)
+      refute Enum.member?(txids, ctx.tx1.txid)
+      assert Enum.member?(txids, ctx.tx2.txid)
+      refute Enum.member?(txids, ctx.tx3.txid)
+      assert Enum.member?(txids, ctx.tx4.txid)
+      refute Enum.member?(txids, ctx.tx5.txid)
+      refute Enum.member?(txids, ctx.tx6.txid)
+      refute Enum.member?(txids, ctx.tx7.txid)
+    end
+
+    test "includes tx if last status is over 5 mintutes ago", ctx do
+      datetime = DateTime.now!("Etc/UTC") |> DateTime.add(-600)
+      Transactions.repo().update_all(MapiResponse, set: [inserted_at: datetime])
+      txns = Transactions.list_tx_for_mapi()
+      txids = Enum.map(txns, & &1.txid)
+      assert Enum.member?(txids, ctx.tx5.txid)
     end
   end
 
@@ -198,10 +270,8 @@ defmodule Txbox.TransactionsTest do
 
 
   describe "confirmed/2" do
-    @describetag skip: "Skipping these tests whilst Transactions.update_tx_status/2 being refactored"
-
     setup do
-      {:ok, tx2} = fixture() |> Transactions.update_tx_status(%{payload: %{block_height: 9000}})
+      {:ok, tx2} = fixture(%{state: "pushed"}) |> Transactions.update_tx_state("confirmed", %{payload: %{"block_height" => 9000}})
       %{tx1: fixture(), tx2: tx2}
     end
 

@@ -31,16 +31,28 @@ defmodule Txbox.Transactions.MapiResponse do
 
     belongs_to :tx, Tx
 
-    timestamps()
+    timestamps(type: :utc_datetime_usec, updated_at: false)
   end
 
 
   @doc false
-  def changeset(status, attrs) do
-    status
+  def changeset(response, attrs) do
+    response
     |> cast(attrs, [:type, :payload, :public_key, :signature, :verified])
     |> validate_required([:type, :payload])
     |> validate_inclusion(:type, ["push", "status"])
+  end
+
+  def push_changeset(response, attrs) do
+    response
+    |> change(%{type: "push"})
+    |> changeset(attrs)
+  end
+
+  def status_changeset(response, attrs) do
+    response
+    |> change(%{type: "status"})
+    |> changeset(attrs)
   end
 
 end

@@ -24,7 +24,8 @@ defmodule Txbox.Transactions do
       [%Tx{}, ...]
   """
   import Ecto.Query, warn: false
-  alias Txbox.Transactions.Tx
+  alias Ecto.Multi
+  alias Txbox.Transactions.{Tx, MapiResponse}
 
 
   @query_keys [:channel, :search, :tagged, :from, :to, :at, :order, :limit, :offset]
@@ -60,9 +61,17 @@ defmodule Txbox.Transactions do
   @doc group: :query
   @spec get_tx(Ecto.Queryable.t, binary) :: Ecto.Schema.t | nil
   def get_tx(tx \\ Tx, id) when is_binary(id) do
+    pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
+    qry = preload(tx, mapi_status: ^pre_qry)
+
     case String.match?(id, ~r/^[a-f0-9]{64}$/i) do
-      true -> repo().get_by(tx, txid: id)
-      false -> repo().get(tx, id)
+      true ->
+        qry
+        |> repo().get_by(txid: id)
+
+      false ->
+        qry
+        |> repo().get(id)
     end
   end
 
@@ -89,7 +98,9 @@ defmodule Txbox.Transactions do
   @doc group: :query
   @spec list_tx(Ecto.Queryable.t, map) :: list(Ecto.Schema.t)
   def list_tx(tx \\ Tx, params) when is_map(params) do
+    pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
     tx
+    |> preload(mapi_status: ^pre_qry)
     |> query(%{} = params)
     |> repo().all
   end
@@ -112,31 +123,85 @@ defmodule Txbox.Transactions do
   def create_tx(attrs \\ %{}) do
     %Tx{}
     |> Tx.changeset(attrs)
-    |> repo().insert()
+    |> repo().insert
   end
 
 
   @doc """
-  Updates the given transaction's status, with the specified params.
-
-  Returns an `:ok` / `:error` tuple response.
-
-  ## Examples
-
-      iex> {:ok, tx} = Transactions.update_tx_status(%{
-      ...>   payload: %{...},
-      ...>   public_key: "03e92d3e5c3f7bd945dfbf48e7a99393b1bfb3f11f380ae30d286e7ff2aec5a270",
-      ...>   signature: "3045022100a490e469426f34fcf62d0f095c10039cf5a1d535c042172786c364d41de65b3a0220654273ca42b5e955179d617ea8252e64ddf74657aa0caebda7372b40a0f07a53"
-      ...> })
+  TODO
   """
   @doc group: :query
-  @spec update_tx_status(Ecto.Schema.t, map | nil) ::
+  @spec update_tx(Ecto.Schema.t, map) ::
     {:ok, Ecto.Schema.t} |
     {:error, Ecto.Changeset.t()}
-  def update_tx_status(%Tx{} = tx, attrs \\ %{}) do
+  def update_tx(%Tx{} = tx, attrs \\ %{}) do
     tx
-    |> Tx.status_changeset(attrs)
-    |> repo().update()
+    |> Tx.changeset(attrs)
+    |> repo().update
+    |> case do
+      {:ok, tx} ->
+        pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
+        {:ok, repo().preload(tx, [mapi_status: pre_qry], force: true)}
+
+      error ->
+        error
+    end
+  end
+
+
+  @doc """
+  TODO
+  """
+  @doc group: :query
+  @spec update_tx_state(Ecto.Schema.t, String.t) ::
+    {:ok, Ecto.Schema.t} |
+    {:error, Ecto.Changeset.t()}
+  def update_tx_state(%Tx{} = tx, state),
+    do: update_tx(tx, %{state: state})
+
+
+  @doc """
+  TODO
+  """
+  @doc group: :query
+  @spec update_tx_state(Ecto.Schema.t, String.t, map) ::
+    {:ok, Ecto.Schema.t} |
+    {:error, Ecto.Changeset.t} |
+    {:error, %{required(atom) => Ecto.Changeset.t}}
+  def update_tx_state(%Tx{state: "pending"} = tx, state, mapi_response) do
+    mapi = Ecto.build_assoc(tx, :mapi_responses)
+    Multi.new
+    |> Multi.insert(:mapi_response, MapiResponse.push_changeset(mapi, mapi_response))
+    |> Multi.update(:tx, Fsmx.transition_changeset(tx, state, mapi_response))
+    |> update_tx_state
+  end
+
+  def update_tx_state(%Tx{state: "pushed"} = tx, state, mapi_response) do
+    mapi = Ecto.build_assoc(tx, :mapi_responses)
+    Multi.new
+    |> Multi.insert(:mapi_response, MapiResponse.status_changeset(mapi, mapi_response))
+    |> Multi.update(:tx, Fsmx.transition_changeset(tx, state, mapi_response))
+    |> update_tx_state
+  end
+
+  def update_tx_state(%Tx{} = tx, state, _mapi_response) do
+    Multi.new
+    |> Multi.update(:tx, Fsmx.transition_changeset(tx, state))
+    |> update_tx_state
+  end
+
+  defp update_tx_state(%Multi{} = multi) do
+    case repo().transaction(multi) do
+      {:ok, %{tx: tx}} ->
+        pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
+        {:ok, repo().preload(tx, [mapi_status: pre_qry], force: true)}
+
+      {:error, name, changeset, _} ->
+        {:error, %{name => changeset}}
+
+      {:error, error} ->
+        {:error, error}
+    end
   end
 
 
@@ -176,17 +241,38 @@ defmodule Txbox.Transactions do
 
 
   @doc """
-  Returns a list of transactions that have not yet been confirmed by mAPI.
+  Returns a list of transactions that must be pushed or have their status
+  confirmed by mAPI.
 
-  This is used internally by `Txbox.MapiStatus.Queue` to fetch transactions for
+  This is used internally by `Txbox.Mapi.Queue` to fetch transactions for
   automatic processing.
+
+  ## Options
+
+  The accepted options are:
+
+  * `:max_status_attempts` - How many times to poll mAPI for confirmation status. Defaults to `20`.
+  * `:retry_status_after` - Number of seconds before polling mAPI for confirmation status. Defaults to `300` (5 minutes).
   """
   @doc group: :query
-  @spec list_pending_tx_for_mapi_check() :: list(Ecto.Schema.t)
-  def list_pending_tx_for_mapi_check() do
+  @spec list_tx_for_mapi(keyword) :: list(Ecto.Schema.t)
+  def list_tx_for_mapi(opts \\ []) do
+    max_status_attempts = Keyword.get(opts, :max_status_attempts, 20)
+    retry_status_after = Keyword.get(opts, :retry_status_after, 300)
+    retry_datetime = DateTime.now!("Etc/UTC") |> DateTime.add(-retry_status_after)
+
+    pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
+
     Tx
-    |> confirmed(false)
-    |> where([t], t.mapi_attempt < 20)
+    |> join(:left, [t], r in subquery(pre_qry), on: r.tx_id == t.id)
+    |> preload(mapi_status: ^pre_qry)
+    |> where([t],
+        t.state == "pending"
+        and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_id = ?", "push", t.id) < 1)
+    |> or_where([t, r],
+        t.state == "pushed"
+        and (is_nil(r) or r.inserted_at < ^retry_datetime)
+        and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_id = ?", "status", t.id) < ^max_status_attempts)
     |> list_tx
   end
 
@@ -248,10 +334,10 @@ defmodule Txbox.Transactions do
   def confirmed(tx, conf \\ true)
 
   def confirmed(tx, true),
-    do: where(tx, [t], t.block_height > 0)
+    do: where(tx, [t], t.state == "confirmed")
 
   def confirmed(tx, false),
-    do: where(tx, [t], is_nil(t.block_height) or t.block_height == 0)
+    do: where(tx, [t], t.state != "confirmed")
 
 
   # Normalizes a query map by converting all keys to strings, taking the

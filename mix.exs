@@ -52,10 +52,10 @@ defmodule Txbox.MixProject do
       {:ecto_sql, "~> 3.4"},
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
       {:jason, "~> 1.2"},
+      {:fsmx, "~> 0.2.0"},
       {:gen_stage, "~> 1.0"},
       {:manic, "~> 0.0.3"},
-      {:postgrex, "~> 0.15", optional: true},
-      {:qex, "~> 0.5"}
+      {:postgrex, "~> 0.15", optional: true}
     ]
   end
 

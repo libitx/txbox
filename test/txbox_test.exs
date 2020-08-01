@@ -67,14 +67,12 @@ defmodule TxboxTest do
 
 
   describe "all/2" do
-    @describetag skip: "Skipping these tests whilst Transactions.update_tx_status/2 being refactored"
-
     setup do
       tx1 = fixture(%{meta: %{title: "test1"}, tags: ["foo"]})
       tx2 = fixture(%{channel: "test", meta: %{title: "test2"}, tags: ["foo", "bar", "baz"]})
-      {:ok, tx3} = fixture(%{meta: %{title: "test3"}}) |> Transactions.update_tx_status(%{payload: %{block_height: 1}})
-      {:ok, tx4} = fixture(%{meta: %{title: "test4"}}) |> Transactions.update_tx_status(%{payload: %{block_height: 2}})
-      {:ok, tx5} = fixture(%{meta: %{title: "test5"}}) |> Transactions.update_tx_status(%{payload: %{block_height: 3}})
+      {:ok, tx3} = fixture(%{state: "pushed", meta: %{title: "test3"}}) |> Transactions.update_tx_state("confirmed", %{payload: %{"block_height" => 1}})
+      {:ok, tx4} = fixture(%{state: "pushed", meta: %{title: "test4"}}) |> Transactions.update_tx_state("confirmed", %{payload: %{"block_height" => 2}})
+      {:ok, tx5} = fixture(%{state: "pushed", meta: %{title: "test5"}}) |> Transactions.update_tx_state("confirmed", %{payload: %{"block_height" => 3}})
       %{tx1: tx1, tx2: tx2, tx3: tx3, tx4: tx4, tx5: tx5}
     end
 

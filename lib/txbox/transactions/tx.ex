@@ -23,8 +23,7 @@ defmodule Txbox.Transactions.Tx do
   """
   use Ecto.Schema
   import Ecto.Changeset
-  alias Txbox.Transactions.{Meta, MapiResponse, Status}
-
+  alias Txbox.Transactions.{Meta, MapiResponse}
 
   @typedoc "Transaction schema"
   @type t :: %__MODULE__{
@@ -37,94 +36,70 @@ defmodule Txbox.Transactions.Tx do
     meta: Meta.t,
     data: map,
     block_height: integer,
-    mapi_attempted_at: DateTime.t,
     inserted_at: DateTime.t,
     updated_at: DateTime.t
   }
 
 
+  @default_state "draft"
   @default_channel "txbox"
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
   schema "txbox_txns" do
-    field :state, :string
+    field :state, :string, default: @default_state
     field :txid, :string
     field :rawtx, :binary
     field :channel, :string, default: @default_channel
     field :tags, {:array, :string}
     field :data, :map
     field :block_height, :integer
-    field :mapi_attempted_at, :utc_datetime
 
     embeds_one :meta, Meta, on_replace: :update
     has_many :mapi_responses, MapiResponse
     has_one :mapi_status, MapiResponse
 
-    timestamps()
+    timestamps(type: :utc_datetime_usec)
   end
+
+
+  use Fsmx.Struct, transitions: %{
+    "draft"   => ["pending", "pushed"],
+    "pending" => ["pushed", "failed"],
+    "pushed"  => ["pushed", "confirmed"]
+  }
 
 
   @doc false
   def changeset(tx, attrs) do
     tx
-    |> cast(attrs, [:txid, :rawtx, :channel, :tags, :data])
+    |> cast(attrs, [:state, :txid, :rawtx, :channel, :tags, :data])
     |> cast_embed(:meta, with: &Meta.changeset/2)
-    |> validate_required([:txid, :channel])
+    |> validate_required([:state, :txid, :channel])
     |> validate_format(:txid, ~r/^[a-f0-9]{64}$/i)
     |> validate_format(:channel, ~r/^\w[\w\-\/]*$/)
+    |> validate_state
   end
 
 
-  @doc false
-  def status_changeset(tx, nil) do
+  # TODO
+  def transition_changeset(tx, "pushed", "confirmed", response) do
+    block_height = get_in(response, [:payload, "block_height"])
     tx
-    |> cast(%{}, [])
-    |> put_mapi_attempted
-  end
-
-  def status_changeset(tx, %{} = attrs) do
-    tx
-    |> cast(%{status: attrs}, [])
-    |> cast_embed(:status, with: &Status.changeset/2)
-    |> put_block_height
-    |> put_mapi_attempted
-    |> put_mapi_completed
+    |> cast(%{block_height: block_height}, [:block_height])
   end
 
 
-  # Puts the block height on the tx, if present in the status payload
-  defp put_block_height(%{valid?: true,
-    changes: %{
-      status: %{
-        changes: %{payload: payload}
-    }}} = changeset)
-  do
-    i = payload["block_height"] || payload[:block_height]
-    put_change(changeset, :block_height, i)
+  # TODO
+  defp validate_state(changeset) do
+    transitions = __MODULE__.__fsmx__().__fsmx__(:transitions)
+
+    validate_change(changeset, :state, fn :state, state ->
+      case Map.keys(transitions) |> Enum.member?(state) do
+        true -> []
+        false -> [state: "cannot be #{state}"]
+      end
+    end)
   end
-
-  defp put_block_height(changeset), do: changeset
-
-
-  # Puts mapi attempt counter and timestamp
-  defp put_mapi_attempted(%{data: tx} = changeset) do
-    now = DateTime.utc_now |> DateTime.truncate(:second)
-    changeset
-    |> put_change(:mapi_attempt, tx.mapi_attempt+1)
-    |> put_change(:mapi_attempted_at, now)
-  end
-
-
-  # Puts mapi complete timestamp
-  defp put_mapi_completed(%{valid?: true, changes: %{block_height: i}} = changeset)
-    when is_integer(i)
-  do
-    now = DateTime.utc_now |> DateTime.truncate(:second)
-    changeset
-    |> put_change(:mapi_completed_at, now)
-  end
-
-  defp put_mapi_completed(changeset), do: changeset
 
 end

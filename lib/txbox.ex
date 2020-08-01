@@ -218,7 +218,8 @@ defmodule Txbox do
 
     case Transactions.create_tx(attrs) do
       {:ok, %Tx{} = tx} ->
-        Txbox.MapiStatus.Queue.push(tx)
+        #Txbox.Mapi.Queue.push(tx)
+        # todo - conditionally add to queue
         {:ok, tx}
 
       {:error, reason} ->

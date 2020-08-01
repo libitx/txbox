@@ -19,7 +19,7 @@ defmodule <%= module_prefix %>.Repo.Migrations.SetupTxBox do
       add :mapi_attempted_at, :utc_datetime
       add :mapi_completed_at, :utc_datetime
       
-      timestamps(type: :utc_datetime)
+      timestamps(type: :utc_datetime_usec)
     end
 
 
