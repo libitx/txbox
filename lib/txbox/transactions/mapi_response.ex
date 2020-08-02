@@ -29,7 +29,7 @@ defmodule Txbox.Transactions.MapiResponse do
     field :signature, :string
     field :verified, :boolean, default: false
 
-    belongs_to :tx, Tx, foreign_key: :tx_guid
+    belongs_to :tx, Tx, foreign_key: :tx_guid, references: :guid
 
     timestamps(type: :utc_datetime_usec, updated_at: false)
   end
