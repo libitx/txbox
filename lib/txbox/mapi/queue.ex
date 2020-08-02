@@ -46,6 +46,13 @@ defmodule Txbox.Mapi.Queue do
 
 
   @impl true
+  def handle_demand(demand, state) when demand > 0 do
+    update_in(state.demand, & &1 + demand)
+    |> take_demanded_events
+  end
+
+
+  @impl true
   def handle_info(:populate_queue, state) do
     queue = Transactions.list_tx_for_mapi()
     |> :queue.from_list
