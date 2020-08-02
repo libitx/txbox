@@ -54,7 +54,7 @@ defmodule Txbox.MixProject do
       {:jason, "~> 1.2"},
       {:fsmx, "~> 0.2.0"},
       {:gen_stage, "~> 1.0"},
-      {:manic, "~> 0.0.3"},
+      {:manic, "~> 0.0.4"},
       {:postgrex, "~> 0.15", optional: true}
     ]
   end

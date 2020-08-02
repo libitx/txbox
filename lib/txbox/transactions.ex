@@ -164,7 +164,7 @@ defmodule Txbox.Transactions do
   TODO
   """
   @doc group: :query
-  @spec update_tx_state(Ecto.Schema.t, String.t, map) ::
+  @spec update_tx_state(Ecto.Schema.t, String.t, Manic.JSONEnvelope.t | map) ::
     {:ok, Ecto.Schema.t} |
     {:error, Ecto.Changeset.t} |
     {:error, %{required(atom) => Ecto.Changeset.t}}

@@ -51,7 +51,7 @@ defmodule Txbox.Mapi.Processor do
     with {:ok, env} <- Manic.TX.push(miner, rawtx, as: :envelope),
          {:ok, payload} <- Manic.JSONEnvelope.parse_payload(env)
     do
-      state = if payload["returnResult"] == "success", do: "pushed", else: "failed"
+      state = if payload["return_result"] == "success", do: "pushed", else: "failed"
       Transactions.update_tx_state(tx, state, Map.put(env, :payload, payload))
     else
       {:error, error} ->
@@ -65,7 +65,11 @@ defmodule Txbox.Mapi.Processor do
     with {:ok, env} <- Manic.TX.status(miner, txid, as: :envelope),
          {:ok, payload} <- Manic.JSONEnvelope.parse_payload(env)
     do
-      state = if payload["returnResult"] == "success", do: "confirmed", else: "pushed"
+      state = if payload["return_result"] == "success"
+        and is_integer(payload["block_height"])
+        and payload["block_height"] > 0,
+        do: "confirmed",
+        else: "pushed"
       Transactions.update_tx_state(tx, state, Map.put(env, :payload, payload))
     else
       {:error, error} ->

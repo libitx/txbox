@@ -84,7 +84,7 @@ defmodule Txbox.Transactions.Tx do
 
   # TODO
   def transition_changeset(tx, "pushed", "confirmed", response) do
-    block_height = get_in(response, [:payload, "block_height"])
+    block_height = get_in(response, [Access.key(:payload), "block_height"])
     tx
     |> cast(%{block_height: block_height}, [:block_height])
   end

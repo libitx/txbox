@@ -36,6 +36,9 @@ defmodule Txbox.Transactions.MapiResponse do
 
 
   @doc false
+  def changeset(response, %Manic.JSONEnvelope{} = env),
+    do: changeset(response, Map.from_struct(env))
+    
   def changeset(response, attrs) do
     response
     |> cast(attrs, [:type, :payload, :public_key, :signature, :verified])
