@@ -10,16 +10,17 @@ defmodule <%= module_prefix %>.Repo.Migrations.CreateTxBoxMapiResponses do
       add :public_key, :string
       add :signature, :string
       add :verified, :boolean
-      add :tx_id, references(:txbox_txns, type: :binary_id, on_delete: :delete_all)
+      add :tx_guid, references(:txbox_txns, type: :binary_id, on_delete: :delete_all)
 
       timestamps(type: :utc_datetime_usec, updated_at: false)
     end
 
     # Add indexes
-    create index(:txbox_mapi_responses, [:tx_id])
+    create index(:txbox_mapi_responses, [:tx_guid])
     create index(:txbox_mapi_responses, [:inserted_at])
 
     # Make adjustments to Txbox tx table
+    rename table(:txbox_txns), :id, to: :guid
     alter table(:txbox_txns) do
       remove :block_hash, :string
       remove :mapi_attempt, :integer

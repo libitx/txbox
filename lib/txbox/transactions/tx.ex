@@ -27,7 +27,7 @@ defmodule Txbox.Transactions.Tx do
 
   @typedoc "Transaction schema"
   @type t :: %__MODULE__{
-    id: binary,
+    guid: binary,
     state: String.t,
     txid: String.t,
     rawtx: binary,
@@ -43,7 +43,7 @@ defmodule Txbox.Transactions.Tx do
 
   @default_state "draft"
   @default_channel "txbox"
-  @primary_key {:id, :binary_id, autogenerate: true}
+  @primary_key {:guid, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
   schema "txbox_txns" do
@@ -56,8 +56,8 @@ defmodule Txbox.Transactions.Tx do
     field :block_height, :integer
 
     embeds_one :meta, Meta, on_replace: :update
-    has_many :mapi_responses, MapiResponse
-    has_one :mapi_status, MapiResponse
+    has_many :mapi_responses, MapiResponse, foreign_key: :tx_guid
+    has_one :mapi_status, MapiResponse, foreign_key: :tx_guid
 
     timestamps(type: :utc_datetime_usec)
   end

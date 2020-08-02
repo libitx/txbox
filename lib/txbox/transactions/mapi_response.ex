@@ -15,7 +15,7 @@ defmodule Txbox.Transactions.MapiResponse do
     public_key: String.t,
     signature: String.t,
     verified: boolean,
-    tx_id: binary
+    tx_guid: binary
   }
 
 
@@ -29,7 +29,7 @@ defmodule Txbox.Transactions.MapiResponse do
     field :signature, :string
     field :verified, :boolean, default: false
 
-    belongs_to :tx, Tx
+    belongs_to :tx, Tx, foreign_key: :tx_guid
 
     timestamps(type: :utc_datetime_usec, updated_at: false)
   end

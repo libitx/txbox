@@ -264,15 +264,15 @@ defmodule Txbox.Transactions do
     pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
 
     Tx
-    |> join(:left, [t], r in subquery(pre_qry), on: r.tx_id == t.id)
+    |> join(:left, [t], r in subquery(pre_qry), on: r.tx_guid == t.guid)
     |> preload(mapi_status: ^pre_qry)
     |> where([t],
         t.state == "pending"
-        and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_id = ?", "push", t.id) < 1)
+        and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_guid = ?", "push", t.guid) < 1)
     |> or_where([t, r],
         t.state == "pushed"
         and (is_nil(r) or r.inserted_at < ^retry_datetime)
-        and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_id = ?", "status", t.id) < ^max_status_attempts)
+        and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_guid = ?", "status", t.guid) < ^max_status_attempts)
     |> list_tx
   end
 
