@@ -39,6 +39,7 @@ defmodule Txbox.Mapi.StatusTest do
   describe "Queue FIFO" do
     setup do
       {:ok, pid} = Queue.start_link
+      :timer.sleep(1) # pause to ensure no async side effects to test
       tx1 = fixture(%{state: "pending"})
       tx2 = fixture(%{state: "pushed"})
       %{pid: pid, tx1: tx1, tx2: tx2}
