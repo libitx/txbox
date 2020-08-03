@@ -33,7 +33,7 @@ defmodule Txbox.MixProject do
       ],
       package: [
         name: "txbox",
-        files: ~w(lib .formatter.exs mix.exs priv README.md LICENSE.md),
+        files: ~w(lib .formatter.exs mix.exs priv README.md LICENSE),
         licenses: ["MIT"],
         links: %{
           "GitHub" => "https://github.com/libitx/txbox"
