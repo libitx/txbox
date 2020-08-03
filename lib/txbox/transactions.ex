@@ -168,7 +168,7 @@ defmodule Txbox.Transactions do
     {:ok, Ecto.Schema.t} |
     {:error, Ecto.Changeset.t} |
     {:error, %{required(atom) => Ecto.Changeset.t}}
-  def update_tx_state(%Tx{state: "pending"} = tx, state, mapi_response) do
+  def update_tx_state(%Tx{state: "queued"} = tx, state, mapi_response) do
     mapi = Ecto.build_assoc(tx, :mapi_responses)
     Multi.new
     |> Multi.insert(:mapi_response, MapiResponse.push_changeset(mapi, mapi_response))
@@ -267,7 +267,7 @@ defmodule Txbox.Transactions do
     |> join(:left, [t], r in subquery(pre_qry), on: r.tx_guid == t.guid)
     |> preload(mapi_status: ^pre_qry)
     |> where([t],
-        t.state == "pending"
+        t.state == "queued"
         and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_guid = ?", "push", t.guid) < 1)
     |> or_where([t, r],
         t.state == "pushed"

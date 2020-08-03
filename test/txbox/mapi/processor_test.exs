@@ -18,8 +18,8 @@ defmodule Txbox.Mapi.ProcessorTest do
       {:ok, pid1} = Queue.start_link
       {:ok, pid2} = Processor.start_link
       :timer.sleep(1)
-      tx1 = fixture(%{state: "pending", rawtx: <<1, 0, 0, 0, 0, 0, 0, 0, 0, 0>>})
-      tx2 = fixture(%{state: "pending", rawtx: <<2, 0, 0, 0, 0, 0, 0, 0, 0, 0>>})
+      tx1 = fixture(%{state: "queued", rawtx: <<1, 0, 0, 0, 0, 0, 0, 0, 0, 0>>})
+      tx2 = fixture(%{state: "queued", rawtx: <<2, 0, 0, 0, 0, 0, 0, 0, 0, 0>>})
 
       Tesla.Mock.mock_global fn env ->
         cond do

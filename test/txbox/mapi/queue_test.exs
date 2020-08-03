@@ -17,7 +17,7 @@ defmodule Txbox.Mapi.StatusTest do
   describe "Queue startup" do
     setup do
       tx1 = fixture()
-      tx2 = fixture(%{state: "pending"})
+      tx2 = fixture(%{state: "queued"})
       :timer.sleep(1) # pause to ensure inserted_at timestamp increments
       tx3 = fixture(%{state: "pushed"})
       tx4 = fixture(%{state: "pushed"}) |> Transactions.update_tx_state("confirmed", %{payload: %{"block_height" => 9000}})
@@ -25,7 +25,7 @@ defmodule Txbox.Mapi.StatusTest do
       %{pid: pid, tx1: tx1, tx2: tx2, tx3: tx3, tx4: tx4}
     end
 
-    test "automatically loads existing pending and pushed txns", ctx do
+    test "automatically loads existing queued and pushed txns", ctx do
       stream = GenStage.stream([{Queue, max_demand: 1}])
       assert [%Tx{} = tx] = Enum.take(stream, 1)
       assert tx.txid == ctx.tx2.txid
@@ -40,7 +40,7 @@ defmodule Txbox.Mapi.StatusTest do
     setup do
       {:ok, pid} = Queue.start_link
       :timer.sleep(1) # pause to ensure no async side effects to test
-      tx1 = fixture(%{state: "pending"})
+      tx1 = fixture(%{state: "queued"})
       tx2 = fixture(%{state: "pushed"})
       %{pid: pid, tx1: tx1, tx2: tx2}
     end

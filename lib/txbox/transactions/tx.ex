@@ -41,7 +41,7 @@ defmodule Txbox.Transactions.Tx do
   }
 
 
-  @default_state "draft"
+  @default_state "pending"
   @default_channel "txbox"
   @primary_key {:guid, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -64,8 +64,8 @@ defmodule Txbox.Transactions.Tx do
 
 
   use Fsmx.Struct, transitions: %{
-    "draft"   => ["pending", "pushed"],
-    "pending" => ["pushed", "failed"],
+    "pending" => ["queued", "pushed"],
+    "queued"  => ["pushed", "failed"],
     "pushed"  => ["pushed", "confirmed"]
   }
 

@@ -37,7 +37,7 @@ defmodule Txbox.Mapi.Processor do
   @impl true
   def handle_events(events, _, state) do
     Enum.each(events, fn
-      %Tx{state: "pending"} = tx -> mapi_push(tx, state)
+      %Tx{state: "queued"} = tx -> mapi_push(tx, state)
       %Tx{state: "pushed"} = tx -> mapi_status(tx, state)
     end)
     {:noreply, [], state}

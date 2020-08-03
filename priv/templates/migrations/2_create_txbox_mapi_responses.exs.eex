@@ -30,6 +30,12 @@ defmodule <%= module_prefix %>.Repo.Migrations.CreateTxBoxMapiResponses do
       add :state, :string
     end
     create index(:txbox_txns, [:state])
+
+    # Set default state for existing txns
+    if direction() == :up do
+      flush()
+      Txbox.Transactions.repo().update_all(Txbox.Transactions.Tx, set: [state: "pending"])
+    end
   end
 
 end

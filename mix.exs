@@ -20,10 +20,14 @@ defmodule Txbox.MixProject do
           "Queries": & &1[:group] == :query
         ],
         groups_for_modules: [
-          "Schema": [
+          Schema: [
             Txbox.Transactions.Tx,
             Txbox.Transactions.Meta,
             Txbox.Transactions.Status
+          ],
+          mAPI: [
+            Txbox.Mapi.Queue,
+            Txbox.Mapi.Processor
           ]
         ]
       ],
@@ -41,7 +45,7 @@ defmodule Txbox.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :gen_stage]
     ]
   end
 

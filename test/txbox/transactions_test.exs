@@ -117,7 +117,7 @@ defmodule Txbox.TransactionsTest do
     setup do
       %{
         tx1: fixture(),
-        tx2: fixture(%{state: "pending"}),
+        tx2: fixture(%{state: "queued"}),
         tx3: fixture(%{state: "pushed"}),
         status: %{payload: %{foo: :bar}}
       }
@@ -164,9 +164,9 @@ defmodule Txbox.TransactionsTest do
   describe "list_tx_for_mapi/0" do
     setup do
       mapi = %{payload: %{foo: :bar}}
-      tx1 = fixture(%{state: "draft", data: %{n: "tx1"}})
-      tx2 = fixture(%{state: "pending", data: %{n: "tx2"}})
-      {:ok, tx3} = fixture(%{state: "pending", data: %{n: "tx3"}}) |> Transactions.update_tx_state("failed", mapi)
+      tx1 = fixture(%{state: "pending", data: %{n: "tx1"}})
+      tx2 = fixture(%{state: "queued", data: %{n: "tx2"}})
+      {:ok, tx3} = fixture(%{state: "queued", data: %{n: "tx3"}}) |> Transactions.update_tx_state("failed", mapi)
       tx4 = fixture(%{state: "pushed", data: %{n: "tx4"}})
       {:ok, tx5} = fixture(%{state: "pushed", data: %{n: "tx5"}}) |> Transactions.update_tx_state("pushed", mapi)
       {:ok, tx6} = fixture(%{state: "pushed", data: %{n: "tx6"}}) |> Transactions.update_tx_state("confirmed", mapi)
