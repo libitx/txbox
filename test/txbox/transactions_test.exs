@@ -133,7 +133,7 @@ defmodule Txbox.TransactionsTest do
     test "returns updated Tx with allowed state change and valid status attributes", ctx do
       assert {:ok, %Tx{} = tx} = Transactions.update_tx_state(ctx.tx2, "pushed", ctx.status)
       assert tx.state == "pushed"
-      assert tx.mapi_status.payload == %{"foo" => "bar"}
+      assert tx.status.payload == %{"foo" => "bar"}
     end
 
     test "returns Changeset with invalid state change", ctx do
@@ -151,7 +151,7 @@ defmodule Txbox.TransactionsTest do
       :timer.sleep(1) # pause to ensure inserted_at timestamp increments by nanosecond
       assert {:ok, %Tx{} = tx} = Transactions.update_tx_state(tx, "confirmed", %{payload: %{i: 3}})
       assert tx.state == "confirmed"
-      assert tx.mapi_status.payload == %{"i" => 3}
+      assert tx.status.payload == %{"i" => 3}
     end
   end
 

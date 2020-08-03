@@ -57,7 +57,7 @@ defmodule Txbox.Transactions.Tx do
 
     embeds_one :meta, Meta, on_replace: :update
     has_many :mapi_responses, MapiResponse, foreign_key: :tx_guid
-    has_one :mapi_status, MapiResponse, foreign_key: :tx_guid
+    has_one :status, MapiResponse, foreign_key: :tx_guid
 
     timestamps(type: :utc_datetime_usec)
   end

@@ -38,7 +38,7 @@ defmodule Txbox.Mapi.ProcessorTest do
       :timer.sleep(100) # pause to allow the async http mock to return
       tx = Txbox.Transactions.get_tx(ctx.tx1.txid)
       assert tx.state == "pushed"
-      assert is_map(tx.mapi_status)
+      assert is_map(tx.status)
       GenStage.stop(ctx.pid2)
       GenStage.stop(ctx.pid1)
     end
@@ -48,7 +48,7 @@ defmodule Txbox.Mapi.ProcessorTest do
       :timer.sleep(100) # pause to allow the async http mock to return
       tx = Txbox.Transactions.get_tx(ctx.tx2.txid)
       assert tx.state == "failed"
-      assert is_map(tx.mapi_status)
+      assert is_map(tx.status)
       GenStage.stop(ctx.pid2)
       GenStage.stop(ctx.pid1)
     end
@@ -84,7 +84,7 @@ defmodule Txbox.Mapi.ProcessorTest do
       tx = Txbox.Transactions.get_tx(ctx.tx1.txid)
       assert tx.state == "confirmed"
       assert is_integer(tx.block_height)
-      assert is_map(tx.mapi_status)
+      assert is_map(tx.status)
       GenStage.stop(ctx.pid2)
       GenStage.stop(ctx.pid1)
     end
@@ -94,7 +94,7 @@ defmodule Txbox.Mapi.ProcessorTest do
       :timer.sleep(100) # pause to allow the async http mock to return
       tx = Txbox.Transactions.get_tx(ctx.tx2.txid)
       assert tx.state == "pushed"
-      assert is_map(tx.mapi_status)
+      assert is_map(tx.status)
       GenStage.stop(ctx.pid2)
       GenStage.stop(ctx.pid1)
     end
@@ -104,7 +104,7 @@ defmodule Txbox.Mapi.ProcessorTest do
       :timer.sleep(100) # pause to allow the async http mock to return
       tx = Txbox.Transactions.get_tx(ctx.tx3.txid)
       assert tx.state == "pushed"
-      assert is_map(tx.mapi_status)
+      assert is_map(tx.status)
       GenStage.stop(ctx.pid2)
       GenStage.stop(ctx.pid1)
     end

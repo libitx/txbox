@@ -62,7 +62,7 @@ defmodule Txbox.Transactions do
   @spec get_tx(Ecto.Queryable.t, binary) :: Ecto.Schema.t | nil
   def get_tx(tx \\ Tx, id) when is_binary(id) do
     pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
-    qry = preload(tx, mapi_status: ^pre_qry)
+    qry = preload(tx, status: ^pre_qry)
 
     case String.match?(id, ~r/^[a-f0-9]{64}$/i) do
       true ->
@@ -100,7 +100,7 @@ defmodule Txbox.Transactions do
   def list_tx(tx \\ Tx, params) when is_map(params) do
     pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
     tx
-    |> preload(mapi_status: ^pre_qry)
+    |> preload(status: ^pre_qry)
     |> query(%{} = params)
     |> repo().all
   end
@@ -151,7 +151,7 @@ defmodule Txbox.Transactions do
     |> case do
       {:ok, tx} ->
         pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
-        {:ok, repo().preload(tx, [mapi_status: pre_qry], force: true)}
+        {:ok, repo().preload(tx, [status: pre_qry], force: true)}
 
       error ->
         error
@@ -216,7 +216,7 @@ defmodule Txbox.Transactions do
     case repo().transaction(multi) do
       {:ok, %{tx: tx}} ->
         pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
-        {:ok, repo().preload(tx, [mapi_status: pre_qry], force: true)}
+        {:ok, repo().preload(tx, [status: pre_qry], force: true)}
 
       {:error, name, changeset, _} ->
         {:error, %{name => changeset}}
@@ -287,7 +287,7 @@ defmodule Txbox.Transactions do
 
     Tx
     |> join(:left, [t], r in subquery(pre_qry), on: r.tx_guid == t.guid)
-    |> preload(mapi_status: ^pre_qry)
+    |> preload(status: ^pre_qry)
     |> where([t],
         t.state == "queued"
         and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_guid = ?", "push", t.guid) < 1)
