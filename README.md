@@ -196,6 +196,6 @@ For more examples, refer to the [full documentation](https://hexdocs.pm/txbox).
 
 ## License
 
-[MIT License](https://github.com/libitx/manic/blob/master/LICENSE.md).
+Txbox is open source and released under the [Apache-2 License](https://github.com/libitx/manic/blob/master/LICENSE.md).
 
 © Copyright 2020 libitx.
