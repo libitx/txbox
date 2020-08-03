@@ -186,7 +186,7 @@ defmodule Txbox do
   most recent response is always preloaded with the transaction. This allows
   you to inspect any messages or errors given by miners.
 
-      iex> {:ok, tx} Txbox.find("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      iex> {:ok, tx} = Txbox.find("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
       iex> tx.status
       %Txbox.Transactions.MapiResponse{
         type: "push",
