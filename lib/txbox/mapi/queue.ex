@@ -1,6 +1,9 @@
 defmodule Txbox.Mapi.Queue do
   @moduledoc """
-  TODO
+  Miner API background queue.
+
+  Once a minute the Queue process queries the database for any transactions that
+  should be added to the mAPI queue.
   """
   use GenStage
   alias Txbox.Transactions
@@ -64,7 +67,7 @@ defmodule Txbox.Mapi.Queue do
   end
 
 
-  # Splits the queue according to the demand, and emits the demanded tx
+  # Splits the queue according to the demand, and emits the demanded tx.
   defp take_demanded_events(state) do
     demand = :queue.len(state.queue) |> min(state.demand)
     {demanded, remaining} = :queue.split(demand, state.queue)
@@ -76,7 +79,7 @@ defmodule Txbox.Mapi.Queue do
   end
 
 
-  # TODO
+  # Sends a :populate_queue message to self after the given number of seconds.
   defp schedule_for_queue(seconds),
     do: Process.send_after(self(), :populate_queue, seconds * 1000)
 

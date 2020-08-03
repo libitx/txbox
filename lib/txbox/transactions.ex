@@ -128,7 +128,17 @@ defmodule Txbox.Transactions do
 
 
   @doc """
-  TODO
+  Updates the transaction with the given params.
+
+  Returns an `:ok` / `:error` tuple response.
+
+  ## Examples
+
+      iex> {:ok, tx} = Transactions.update_tx(tx, %{
+      ...>   meta: %{
+      ...>     title: "Hubble Ultra-Deep Field"
+      ...>   }
+      ...> })
   """
   @doc group: :query
   @spec update_tx(Ecto.Schema.t, map) ::
@@ -150,7 +160,13 @@ defmodule Txbox.Transactions do
 
 
   @doc """
-  TODO
+  Updates the given transaction's state.
+
+  Returns an `:ok` / `:error` tuple response.
+
+  ## Examples
+
+      iex> {:ok, tx} = Transactions.update_tx_state(tx, "pushed")
   """
   @doc group: :query
   @spec update_tx_state(Ecto.Schema.t, String.t) ::
@@ -161,7 +177,13 @@ defmodule Txbox.Transactions do
 
 
   @doc """
-  TODO
+  Updates the given transaction's state, and stores the mAPI response.
+
+  Returns an `:ok` / `:error` tuple response.
+
+  ## Examples
+
+      iex> {:ok, tx} = Transactions.update_tx_state(tx, "pushed", mapi_response)
   """
   @doc group: :query
   @spec update_tx_state(Ecto.Schema.t, String.t, Manic.JSONEnvelope.t | map) ::

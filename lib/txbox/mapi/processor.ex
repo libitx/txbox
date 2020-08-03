@@ -1,6 +1,10 @@
 defmodule Txbox.Mapi.Processor do
   @moduledoc """
-  TODO
+  Miner API queue processor.
+
+  Takes transactions one by one from the mAPI queue, and depending on the
+  transaction state, either pushes the transaction to the miner, or checks the
+  status of the transaction by its `txid`.
   """
   require Logger
   use GenStage
@@ -44,7 +48,7 @@ defmodule Txbox.Mapi.Processor do
   end
 
 
-  # TODO
+  # Sends the transaction to the miner
   defp mapi_push(%Tx{txid: txid, rawtx: rawtx} = tx, %{miner: miner}) do
     rawtx = Base.encode16(rawtx, case: :lower)
 
@@ -60,7 +64,7 @@ defmodule Txbox.Mapi.Processor do
   end
 
 
-  # TODO
+  # Queries the status of a transaction by its txid
   defp mapi_status(%Tx{txid: txid} = tx, %{miner: miner}) do
     with {:ok, env} <- Manic.TX.status(miner, txid, as: :envelope),
          {:ok, payload} <- Manic.JSONEnvelope.parse_payload(env)

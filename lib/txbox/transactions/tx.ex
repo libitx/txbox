@@ -82,7 +82,7 @@ defmodule Txbox.Transactions.Tx do
   end
 
 
-  # TODO
+  # Changeset for transitioning state from "pushed" to "confirmed"
   def transition_changeset(tx, "pushed", "confirmed", response) do
     block_height = get_in(response, [Access.key(:payload), "block_height"])
     tx
@@ -90,7 +90,7 @@ defmodule Txbox.Transactions.Tx do
   end
 
 
-  # TODO
+  # Validates the changeset state change
   defp validate_state(%{data: %__MODULE__{} = tx} = changeset) do
     persisted? = Ecto.get_meta(tx, :state) == :loaded
 

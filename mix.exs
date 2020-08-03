@@ -11,7 +11,7 @@ defmodule Txbox.MixProject do
       aliases: aliases(),
       deps: deps(),
       name: "Txbox",
-      description: "TODO",
+      description: "Txbox is a Bitcoin transaction storage schema",
       source_url: "https://github.com/libitx/txbox",
       docs: [
         main: "Txbox",

@@ -336,8 +336,8 @@ defmodule Txbox do
 
   @doc "Finds a transaction by it's txid, scoped by the specified channel."
   @deprecated "Use find/2 instead"
-  @spec get(String.t, String.t) :: {:ok, Tx.t} | {:error, :not_found}
-  def get(channel \\ @default_channel, txid) when is_binary(txid),
+  def get(channel \\ @default_channel, txid)
+    when is_binary(txid),
     do: find(channel, txid)
 
 
@@ -386,13 +386,33 @@ defmodule Txbox do
 
   @doc "Adds the given transaction parameters into Txbox, within the specified channel."
   @deprecated "Use create/2 instead"
-  @spec set(String.t, map) :: {:ok, Tx.t} | {:error, Ecto.Changeset.t}
   def set(channel \\ @default_channel, %{} = attrs),
     do: create(channel, attrs)
 
 
   @doc """
-  TODO
+  Updates the given transaction with the updated parameters.
+
+  It is only possible to update `"pending"` state transactions, otherwise the
+  function will return an error.
+
+  ## Examples
+
+      iex> {:ok, tx} = Txbox.create(%{
+      ...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
+      ...>   meta: %{title: "Hubble Ultra-Deep Field"}
+      ...> })
+      iex>
+      iex> Txbox.update(tx, %{
+      ...>  tags: ["hubble", "universe"]
+      ...> })
+      {:ok, %Tx{
+        txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
+        tags: ["hubble", "universe"],
+        meta: %{
+          title: "Hubble Ultra-Deep Field"
+        }
+      }}
   """
   @spec update(Tx.t, map) :: {:ok, Tx.t} | {:error, Ecto.Changeset.t}
   def update(%Tx{} = tx, %{} = attrs) do
@@ -407,7 +427,7 @@ defmodule Txbox do
   end
 
 
-  # TODO
+  # Enqueues the transaction for mAPI processing if it has the correct state
   defp mapi_queue_push(%Tx{state: state} = tx)
     when state == "queued"
     or state == "pushed",
