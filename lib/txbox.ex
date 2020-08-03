@@ -2,18 +2,17 @@ defmodule Txbox do
   @moduledoc """
   ![Elixir Bitcoin Tx storage schema](https://github.com/libitx/txbox/raw/master/media/poster.png)
 
-  ![Hex.pm](https://img.shields.io/hexpm/v/txbox?color=informational)
-  ![MIT License](https://img.shields.io/github/license/libitx/txbox?color=informational)
-  ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/libitx/txbox/Elixir%20CI)
+  ![License](https://img.shields.io/github/license/libitx/txbox?color=informational)
 
-  Txbox is a Bitcoin transaction storage schema, based on [TXT](https://txt.network/).
-  Txbox lets you store Bitcoin transactions in your application's database with
-  searchable and filterable semantic metadata.
+  Txbox is a Bitcoin transaction storage schema. It lets you store Bitcoin
+  transactions in your application's database with searchable and filterable
+  semantic metadata. Txbox is inspired by [TXT](https://txt.network/) but
+  adapted to slot into an Elixir developers toolset.
 
-  * 100% compatible with TXT, with near identical schema design and API for searching and filtering.
-  * As Txbox is built on Ecto, you query your own database rather than a containerized HTTP process.
-  * Create associations with any other data from your app's domain.
-  * Like TXT, Txbox auto-syncs with the [Miner API](https://github.com/bitcoin-sv/merchantapi-reference) of your choice, and caches signed responses.
+  * Built on Ecto! Store Bitcoin Transactions in your database and define associations with any other data from your app's domain.
+  * Built in queue for pushing signed transactions to the Bitcoin network via the [Miner API](https://github.com/bitcoin-sv/merchantapi-reference).
+  * Auto-syncs with the [Miner API](https://github.com/bitcoin-sv/merchantapi-reference) of your choice, and caches signed responses.
+  * Aims to be compatible with TXT, with similar schema design and API for searching and filtering.
   * Unlike TXT, no web UI or HTTP API is exposed. Txbox is purely a database schema with query functions - the rest is up to you.
   * Coming soon (™) - Seamlessly import and export from other TXT-compatible platforms.
 
@@ -24,7 +23,7 @@ defmodule Txbox do
 
       def deps do
         [
-          {:txbox, "~> 0.1"}
+          {:txbox, "~> 0.2"}
         ]
       end
 
@@ -46,7 +45,7 @@ defmodule Txbox do
 
       children = [
         {Txbox, [
-          # Manic miner configuration (required)
+          # Manic miner configuration (defaults to :taal)
           miner: {:taal, headers: [{"token", "MYTOKEN"}]},
           # Maximum number of times to attempt polling the miner (default is 20)
           max_retries: 20,
@@ -56,6 +55,17 @@ defmodule Txbox do
       ]
 
       Supervisor.start_link(children, strategy: :one_for_one)
+
+  ## Upgrading
+
+  If upgrading from a previous version of `txbox`, make sure to run the migrations
+  task to check if any new migrations are required.
+
+  ```conosle
+  mix txbox.gen.migrations
+  # If needed
+  mix ecto.migrate
+  ```
 
   ## Usage
 

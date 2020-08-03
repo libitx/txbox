@@ -91,7 +91,14 @@ defmodule Txbox.Transactions.Tx do
 
 
   # TODO
-  defp validate_state(changeset) do
+  defp validate_state(%{data: %__MODULE__{} = tx} = changeset) do
+    persisted? = Ecto.get_meta(tx, :state) == :loaded
+
+    changeset = case persisted? && tx.state != "pending" do
+      true -> add_error(changeset, :base, "cannot mutate non-pending transaction")
+      false -> changeset
+    end
+
     transitions = __MODULE__.__fsmx__().__fsmx__(:transitions)
 
     validate_change(changeset, :state, fn :state, state ->

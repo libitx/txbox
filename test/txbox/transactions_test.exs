@@ -85,17 +85,24 @@ defmodule Txbox.TransactionsTest do
 
   describe "update_tx/2" do
     setup do
-      %{tx: fixture(%{data: %{foo: "bar"}})}
+      %{
+        tx1: fixture(%{data: %{foo: "bar"}}),
+        tx2: fixture(%{state: "queued", data: %{foo: "bar"}})
+      }
     end
 
     test "returns updated Tx with valid attributes", ctx do
-      {:ok, %Tx{} = tx} = Transactions.update_tx(ctx.tx, %{channel: "foobar", data: %{qux: "baz"}})
+      {:ok, %Tx{} = tx} = Transactions.update_tx(ctx.tx1, %{channel: "foobar", data: %{qux: "baz"}})
       assert tx.channel == "foobar"
       assert tx.data == %{qux: "baz"}
     end
 
+    test "returns Changeset if mutating non-pending transaction", ctx do
+      assert {:error, %Ecto.Changeset{}} = Transactions.update_tx(ctx.tx2, %{data: %{qux: "baz"}})
+    end
+
     test "returns Changeset with invalid attributes", ctx do
-      assert {:error, %Ecto.Changeset{}} = Transactions.update_tx(ctx.tx, %{txid: "foobar"})
+      assert {:error, %Ecto.Changeset{}} = Transactions.update_tx(ctx.tx1, %{txid: "foobar"})
     end
   end
 
