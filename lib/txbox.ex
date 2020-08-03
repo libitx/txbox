@@ -30,7 +30,7 @@ defmodule Txbox do
   Once installed, run the following tasks to generate and run the required
   database migrations.
 
-  ```conosle
+  ```console
   mix txbox.gen.migrations
   mix ecto.migrate
   ```
@@ -61,7 +61,7 @@ defmodule Txbox do
   If upgrading from a previous version of `txbox`, make sure to run the migrations
   task to check if any new migrations are required.
 
-  ```conosle
+  ```console
   mix txbox.gen.migrations
   # If needed
   mix ecto.migrate
@@ -69,25 +69,23 @@ defmodule Txbox do
 
   ## Usage
 
-  Once up an running, using Txbox is simple. The `Txbox` modules provides three
-  functions for creating and finding transactions: `set/2`, `get/2`, and `all/2`.
+  Once up an running, using Txbox is simple. The `Txbox` modules provides four
+  CRUD-like functions for managing transactions: `create/2`, `update/2`,
+  `find/2` and `all/2`.
 
   To add a transaction to Txbox, the minimum required is to give a `txid`.
 
-      iex> Txbox.set(%{
+      iex> Txbox.create(%{
       ...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110"
       ...> })
       {:ok, %Tx{}}
 
-  Once a transaction is added, Txbox automatically syncs with the Miner API of
-  your choice, updating the transaction's status until it is confirmed in a block.
-
   When a channel name is ommitted, transactions are added to the `default_channel/0`
-  (`"txbox"`), but by specifiying a channel name as the first argument, that
+  (`"txbox"`), but by specifiying a channel name as the first argument, the
   transaction will be added to that channel. You can provide additional metadata
   about the transaction, as well as attach the raw transaction binary.
 
-      iex> Txbox.set("photos", %{
+      iex> Txbox.create("photos", %{
       ...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
       ...>   rawtx: <<...>>,
       ...>   tags: ["hubble", "universe"],
@@ -100,16 +98,16 @@ defmodule Txbox do
       ...> })
       {:ok, %Tx{}}
 
-  The transaction can be retrieved by the `txid` too.
+  The transaction can be retrieved by the `txid`.
 
-      iex> Txbox.get("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      iex> Txbox.find("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
       {:ok, %Tx{}}
 
   As before, omitting the channel scopes the query to the `default_channel/0`
   (`"txbox"`). Alterntively you can pass the channel name as the first argument,
   or use `"_"` which is the TXT syntax for global scope.
 
-      iex> Txbox.get("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      iex> Txbox.find("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
       {:ok, %Tx{}}
 
   A list of transactions can be returned using `all/2`. The second parameter
@@ -157,6 +155,50 @@ defmodule Txbox do
     * `%{order: "-created_at"}` - sort by insertion time in descending order
   * `:limit` - The maximum number of transactions to return
   * `:offset` - The start offset from which to return transactions (for pagination)
+
+  ## Transaction state machine and miner API integration
+
+  Under the hood, Txbox is packed with a powerful state machine with automatic
+  miner API integration.
+
+  ![Txbox state machine](https://github.com/libitx/txbox/raw/master/media/state-machine.png)
+
+  When creating a new transaction, you can set its state to one of the
+  following values.
+
+  * `"pending"` - If no state is specified, the default state is `"pending"`.
+  Pending transactions can be considered draft or incomplete transactions. Draft
+  transactions can be updated, and will not be pushed to miners unless the state
+  changes.
+  * `"queued"` - Under the `"queued"` state, a transaction will be asynchronously
+  pushed to the configured miner API in the background. Depending on the miner
+  response, the state will transition to `"pushed"` or `"failed"`.
+  * `"pushed"` - If the state is specified as `"pushed"`, this tells Txbox the
+  transaction is already accepted by miners. In the background, Txbox will poll
+  the configured miner API until a response confirms the transaction is in a
+  block.
+
+  The miner API queue and processing occurs automatically in a background
+  process, run under your application's supervision tree. For details refer to
+  `Txbox.Mapi.Queue` and `Txbox.Mapi.Processor`.
+
+  Each historic miner API response is saved associated to the transaction. The
+  most recent response is always preloaded with the transaction. This allows
+  you to inspect any messages or errors given by miners.
+
+      iex> {:ok, tx} Txbox.find("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      iex> tx.status
+      %Txbox.Transactions.MapiResponse{
+        type: "push",
+        payload: %{
+          "return_result" => "failure",
+          "return_description" => "Not enough fees",
+          ...
+        },
+        public_key: "03e92d3e5c3f7bd945dfbf48e7a99393b1bfb3f11f380ae30d286e7ff2aec5a270",
+        signature: "3045022100c8e7f9369545b89c978afc13cc19fc6dd6e1cd139d363a6b808141e2c9fccd2e02202e12f4bf91d10bf7a45191e6fe77f50d7b5351dae7e0613fecc42f61a5736af8",
+        verified: true
+      }
   """
   @doc false
   use Supervisor
@@ -191,90 +233,6 @@ defmodule Txbox do
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
-  end
-
-
-  @doc """
-  Adds the given transaction parameters into Txbox, within the specified channel.
-
-  If the channel is omitted, it defaults to `default_channel/0`.
-
-  ## Examples
-
-  Add a transaction txid within the default channel (`"txbox"`).
-
-      iex> Txbox.set(%{
-      ...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110"
-      ...> })
-      {:ok, %Tx{}}
-
-  Add a transaction with associated meta data, within a specified channel.
-
-      iex> Txbox.set("photos", %{
-      ...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
-      ...>   tags: ["hubble", "universe"],
-      ...>   meta: %{
-      ...>     title: "Hubble Ultra-Deep Field"
-      ...>   },
-      ...>   data: %{
-      ...>     bitfs: "https://x.bitfs.network/6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110.out.0.3"
-      ...>   }
-      ...> })
-      {:ok, %Tx{}}
-  """
-  @spec set(String.t, map) :: {:ok, Tx.t} | {:error, Ecto.Changeset.t}
-  def set(channel \\ @default_channel, %{} = attrs) do
-    attrs = Map.put(attrs, :channel, channel)
-
-    case Transactions.create_tx(attrs) do
-      {:ok, %Tx{} = tx} ->
-        #Txbox.Mapi.Queue.push(tx)
-        # todo - conditionally add to queue
-        {:ok, tx}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-
-  @doc """
-  Finds a transaction by it's txid, scoped by the specified channel.
-
-  If the channel is omitted, it defaults to `default_channel/0`. Alernatively,
-  the channel can be specified as `"_"` which is the TXT syntax for the global
-  scope.
-
-  ## Examples
-
-  Find within the default channel (`"txbox"`)
-
-      iex> Txbox.get("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
-      {:ok, %Tx{}}
-
-  Find within the specified channel
-
-      iex> Txbox.get("photos", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
-      {:ok, %Tx{}}
-
-  Find within the global scope
-
-      iex> Txbox.get("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
-      {:ok, %Tx{}}
-  """
-  @spec get(String.t, String.t) :: {:ok, Tx.t} | {:error, :not_found}
-  def get(channel \\ @default_channel, txid) when is_binary(txid) do
-    tx = Tx
-    |> Transactions.channel(channel)
-    |> Transactions.get_tx(txid)
-
-    case tx do
-      %Tx{} = tx ->
-        {:ok, tx}
-
-      nil ->
-        {:error, :not_found}
-    end
   end
 
 
@@ -334,5 +292,127 @@ defmodule Txbox do
 
     {:ok, txns}
   end
+
+
+  @doc """
+  Finds a transaction by it's txid, scoped by the specified channel.
+
+  If the channel is omitted, it defaults to `default_channel/0`. Alernatively,
+  the channel can be specified as `"_"` which is the TXT syntax for the global
+  scope.
+
+  ## Examples
+
+  Find within the default channel (`"txbox"`)
+
+      iex> Txbox.find("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      {:ok, %Tx{}}
+
+  Find within the specified channel
+
+      iex> Txbox.find("photos", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      {:ok, %Tx{}}
+
+  Find within the global scope
+
+      iex> Txbox.find("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+      {:ok, %Tx{}}
+  """
+  @spec find(String.t, String.t) :: {:ok, Tx.t} | {:error, :not_found}
+  def find(channel \\ @default_channel, txid) when is_binary(txid) do
+    tx = Tx
+    |> Transactions.channel(channel)
+    |> Transactions.get_tx(txid)
+
+    case tx do
+      %Tx{} = tx ->
+        {:ok, tx}
+
+      nil ->
+        {:error, :not_found}
+    end
+  end
+
+
+  @doc "Finds a transaction by it's txid, scoped by the specified channel."
+  @deprecated "Use find/2 instead"
+  @spec get(String.t, String.t) :: {:ok, Tx.t} | {:error, :not_found}
+  def get(channel \\ @default_channel, txid) when is_binary(txid),
+    do: find(channel, txid)
+
+
+  @doc """
+  Adds the given transaction parameters into Txbox, within the specified channel.
+
+  If the channel is omitted, it defaults to `default_channel/0`.
+
+  ## Examples
+
+  Add a transaction txid within the default channel (`"txbox"`).
+
+      iex> Txbox.create(%{
+      ...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110"
+      ...> })
+      {:ok, %Tx{}}
+
+  Add a transaction with associated meta data, within a specified channel.
+
+      iex> Txbox.create("photos", %{
+      ...>   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
+      ...>   tags: ["hubble", "universe"],
+      ...>   meta: %{
+      ...>     title: "Hubble Ultra-Deep Field"
+      ...>   },
+      ...>   data: %{
+      ...>     bitfs: "https://x.bitfs.network/6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110.out.0.3"
+      ...>   }
+      ...> })
+      {:ok, %Tx{}}
+  """
+  @spec create(String.t, map) :: {:ok, Tx.t} | {:error, Ecto.Changeset.t}
+  def create(channel \\ @default_channel, %{} = attrs) do
+    attrs = Map.put(attrs, :channel, channel)
+
+    case Transactions.create_tx(attrs) do
+      {:ok, %Tx{} = tx} ->
+        mapi_queue_push(tx)
+        {:ok, tx}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+
+  @doc "Adds the given transaction parameters into Txbox, within the specified channel."
+  @deprecated "Use create/2 instead"
+  @spec set(String.t, map) :: {:ok, Tx.t} | {:error, Ecto.Changeset.t}
+  def set(channel \\ @default_channel, %{} = attrs),
+    do: create(channel, attrs)
+
+
+  @doc """
+  TODO
+  """
+  @spec update(Tx.t, map) :: {:ok, Tx.t} | {:error, Ecto.Changeset.t}
+  def update(%Tx{} = tx, %{} = attrs) do
+    case Transactions.update_tx(tx, attrs) do
+      {:ok, %Tx{} = tx} ->
+        mapi_queue_push(tx)
+        {:ok, tx}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+
+  # TODO
+  defp mapi_queue_push(%Tx{state: state} = tx)
+    when state == "queued"
+    or state == "pushed",
+    do: Txbox.Mapi.Queue.push(tx)
+
+  defp mapi_queue_push(%Tx{}), do: false
 
 end

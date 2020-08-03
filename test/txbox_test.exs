@@ -13,59 +13,6 @@ defmodule TxboxTest do
   end
 
 
-  describe "set/2" do
-    test "add a tx to default channel" do
-      txid = :crypto.strong_rand_bytes(32) |> Base.encode16
-      assert {:ok, %Tx{} = tx} = Txbox.set(%{txid: txid, meta: %{title: "test-a"}})
-      assert tx.meta.title == "test-a"
-      assert tx.channel == "txbox"
-    end
-
-    test "add a tx to specific channel" do
-      txid = :crypto.strong_rand_bytes(32) |> Base.encode16
-      assert {:ok, %Tx{} = tx} = Txbox.set("test", %{txid: txid, meta: %{title: "test-b"}})
-      assert tx.meta.title == "test-b"
-      assert tx.channel == "test"
-    end
-
-    test "returns error with invalid attributes" do
-      assert {:error, %{errors: errors}} = Txbox.set(%{})
-      assert Keyword.keys(errors) |> Enum.member?(:txid)
-    end
-  end
-
-
-  describe "get/2" do
-    setup do
-      tx1 = fixture(%{meta: %{title: "test1"}, tags: ["foo"]})
-      tx2 = fixture(%{channel: "test", meta: %{title: "test2"}, tags: ["foo", "bar", "baz"]})
-      %{tx1: tx1, tx2: tx2}
-    end
-
-    test "get a tx in default channel", %{tx1: tx} do
-      assert {:ok, %Tx{channel: "txbox"} = tx} = Txbox.get(tx.txid)
-      assert tx.meta.title == "test1"
-    end
-
-    test "get a tx scoped by channel", %{tx2: tx} do
-      assert {:ok, %Tx{channel: "test"} = tx} = Txbox.get("test", tx.txid)
-      assert tx.meta.title == "test2"
-    end
-
-    test "wont find the tx in incorrect channel", %{tx1: tx} do
-      assert {:error, :not_found} = Txbox.get("test", tx.txid)
-    end
-
-    test "find the tx with global channel scope", %{tx2: tx} do
-      assert {:ok, %Tx{channel: "test"} = tx} = Txbox.get("_", tx.txid)
-    end
-
-    test "wont find the tx in doesnt exist" do
-      assert {:error, :not_found} = Txbox.get("_", "0000000000000000000000000000000000000000000000000000000000000000")
-    end
-  end
-
-
   describe "all/2" do
     setup do
       tx1 = fixture(%{meta: %{title: "test1"}, tags: ["foo"]})
@@ -169,6 +116,83 @@ defmodule TxboxTest do
       assert {:ok, [tx]} = Txbox.all("test", %{search: "bitcoin bsv"})
       assert tx.meta.title == "Bitcoin: A Peer-to-Peer Electronic Cash System"
       assert {:ok, []} = Txbox.all("test", %{search: "hubble photos"})
+    end
+  end
+
+
+  describe "find/2" do
+    setup do
+      tx1 = fixture(%{meta: %{title: "test1"}, tags: ["foo"]})
+      tx2 = fixture(%{channel: "test", meta: %{title: "test2"}, tags: ["foo", "bar", "baz"]})
+      %{tx1: tx1, tx2: tx2}
+    end
+
+    test "get a tx in default channel", %{tx1: tx} do
+      assert {:ok, %Tx{channel: "txbox"} = tx} = Txbox.find(tx.txid)
+      assert tx.meta.title == "test1"
+    end
+
+    test "get a tx scoped by channel", %{tx2: tx} do
+      assert {:ok, %Tx{channel: "test"} = tx} = Txbox.find("test", tx.txid)
+      assert tx.meta.title == "test2"
+    end
+
+    test "wont find the tx in incorrect channel", %{tx1: tx} do
+      assert {:error, :not_found} = Txbox.find("test", tx.txid)
+    end
+
+    test "find the tx with global channel scope", %{tx2: tx} do
+      assert {:ok, %Tx{channel: "test"} = tx} = Txbox.find("_", tx.txid)
+    end
+
+    test "wont find the tx in doesnt exist" do
+      assert {:error, :not_found} = Txbox.find("_", "0000000000000000000000000000000000000000000000000000000000000000")
+    end
+  end
+
+
+  describe "create/2" do
+    test "add a tx to default channel" do
+      txid = :crypto.strong_rand_bytes(32) |> Base.encode16
+      assert {:ok, %Tx{} = tx} = Txbox.create(%{txid: txid, meta: %{title: "test-a"}})
+      assert tx.meta.title == "test-a"
+      assert tx.channel == "txbox"
+    end
+
+    test "add a tx to specific channel" do
+      txid = :crypto.strong_rand_bytes(32) |> Base.encode16
+      assert {:ok, %Tx{} = tx} = Txbox.create("test", %{txid: txid, meta: %{title: "test-b"}})
+      assert tx.meta.title == "test-b"
+      assert tx.channel == "test"
+    end
+
+    test "returns error with invalid attributes" do
+      assert {:error, %{errors: errors}} = Txbox.create(%{})
+      assert Keyword.keys(errors) |> Enum.member?(:txid)
+    end
+  end
+
+
+  describe "update/2" do
+    setup do
+      tx1 = fixture(%{state: "pending", meta: %{title: "test1"}})
+      tx2 = fixture(%{state: "queued", meta: %{title: "test2"}})
+      %{tx1: tx1, tx2: tx2}
+    end
+
+    test "updates a pending tx with valid params", %{tx1: tx} do
+      assert {:ok, %Tx{} = tx} = Txbox.update(tx, %{meta: %{title: "test-a"}})
+      assert tx.meta.title == "test-a"
+    end
+
+    test "returns error with invalid params", %{tx1: tx} do
+      assert {:error, %{errors: errors}} = Txbox.update(tx, %{txid: "zzzzz"})
+      assert Keyword.keys(errors) |> Enum.member?(:txid)
+    end
+
+    test "returns error when updating non-pending tx", %{tx2: tx} do
+      assert {:error, %{errors: errors}} = Txbox.update(tx, %{meta: %{title: "test-a"}})
+      assert Keyword.get(errors, :base) |> elem(0) == "cannot mutate non-pending transaction"
     end
   end
 

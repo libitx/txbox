@@ -59,26 +59,37 @@ children = [
 Supervisor.start_link(children, strategy: :one_for_one)
 ```
 
+## Upgrading
+
+If upgrading from a previous version of `txbox`, make sure to run the migrations
+task to check if any new migrations are required.
+
+```console
+mix txbox.gen.migrations
+# If needed
+mix ecto.migrate
+```
+
 ## Usage
 
 For detailed examples, refer to the [full documentation](https://hexdocs.pm/txbox).
 
-Once up an running, using Txbox is simple. The `Txbox` modules provides three functions for creating and finding transactions: `set/2`, `get/2`, and `all/2`.
+Once up an running, using Txbox is simple. The `Txbox` modules provides four CRUD-like functions for managing transactions: `create/2`, `update/2`, `find/2` and `all/2`.
 
 To add a transaction to Txbox, the minimum required is to give a `txid`.
 
 ```elixir
-Txbox.set(%{
+Txbox.create(%{
   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110"
 })
 ```
 
 Once a transaction is added, Txbox automatically syncs with the Miner API of your choice, updating the transaction's status until it is confirmed in a block.
 
-When a channel name is ommitted, transactions are added to the `default_channel/0` (`"txbox"`), but by specifiying a channel name as the first argument, that transaction will be added to that channel. You can provide additional metadata about the transaction, as well as attach the raw transaction binary.
+When a channel name is ommitted, transactions are added to the `default_channel/0` (`"txbox"`), but by specifiying a channel name as the first argument, the transaction will be added to that channel. You can provide additional metadata about the transaction, as well as attach the raw transaction binary.
 
 ```elixir
-Txbox.set("photos", %{
+Txbox.create("photos", %{
   txid: "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110",
   rawtx: <<...>>,
   tags: ["hubble", "universe"],
@@ -91,16 +102,16 @@ Txbox.set("photos", %{
 })
 ```
 
-The transaction can be retrieved by the `txid` too.
+The transaction can be retrieved by the `txid`.
 
 ```elixir
-Txbox.get("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+Txbox.find("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
 ```
 
 As before, omitting the channel scopes the query to the `default_channel/0` (`"txbox"`). Alterntively you can pass the channel name as the first argument, or use `"_"` which is the TXT syntax for global scope.
 
 ```elixir
-Txbox.get("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+Txbox.find("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
 ```
 
 A list of transactions can be returned using `all/2`. The second parameter must be a `t:map/0` of query parameters to filter and search by.
@@ -147,6 +158,39 @@ Txbox adopts the same syntax and query modifiers [used by TXT](https://txt.netwo
   * `%{order: "-created_at"}` - sort by insertion time in descending order
 * `:limit` - The maximum number of transactions to return
 * `:offset` - The start offset from which to return transactions (for pagination)
+
+
+## Transaction state machine and miner API integration
+
+Under the hood, Txbox is packed with a powerful state machine with automatic miner API integration.
+
+![Txbox state machine](https://github.com/libitx/txbox/raw/master/media/state-machine.png)
+
+When creating a new transaction, you can set its state to one of the following values.
+
+* `"pending"` - If no state is specified, the default state is `"pending"`. Pending transactions can be considered draft or incomplete transactions. Draft transactions can be updated, and will not be pushed to miners unless the state changes.
+* `"queued"` - Under the `"queued"` state, a transaction will be asynchronously pushed to the configured miner API in the background. Depending on the miner response, the state will transition to `"pushed"` or `"failed"`.
+* `"pushed"` - If the state is specified as `"pushed"`, this tells Txbox the transaction is already accepted by miners. In the background, Txbox will poll the configured miner API until a response confirms the transaction is in a block.
+
+The miner API queue and processing occurs automatically in a background process, run under your application's supervision tree. For details refer to `Txbox.Mapi.Queue` and `Txbox.Mapi.Processor`.
+
+Each historic miner API response is saved associated to the transaction. The most recent response is always preloaded with the transaction. This allows you to inspect any messages or errors given by miners.
+
+```elixir
+iex> {:ok, tx} Txbox.find("6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
+iex> tx.status
+%Txbox.Transactions.MapiResponse{
+  type: "push",
+  payload: %{
+    "return_result" => "failure",
+    "return_description" => "Not enough fees",
+    ...
+  },
+  public_key: "03e92d3e5c3f7bd945dfbf48e7a99393b1bfb3f11f380ae30d286e7ff2aec5a270",
+  signature: "3045022100c8e7f9369545b89c978afc13cc19fc6dd6e1cd139d363a6b808141e2c9fccd2e02202e12f4bf91d10bf7a45191e6fe77f50d7b5351dae7e0613fecc42f61a5736af8",
+  verified: true
+}
+```
 
 For more examples, refer to the [full documentation](https://hexdocs.pm/txbox).
 
