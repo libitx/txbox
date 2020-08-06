@@ -49,10 +49,10 @@ children = [
   {Txbox, [
     # Manic miner configuration (defaults to :taal)
     miner: {:taal, headers: [{"token", "MYTOKEN"}]},
-    # Number of times to attempt polling the miner (default is 20)
-    max_retries: 20,
-    # Number of seconds to wait before re-polling the miner (default is 300 - 5 minutes)
-    retry_after: 300
+    # Maximum number of times to attempt polling the miner (default is 20)
+    max_status_attempts: 20,
+    # Interval (in seconds) between each mAPI request (default is 300 - 5 minutes)
+    retry_status_after: 300
   ]}
 ]
 

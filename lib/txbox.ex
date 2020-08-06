@@ -48,9 +48,9 @@ defmodule Txbox do
           # Manic miner configuration (defaults to :taal)
           miner: {:taal, headers: [{"token", "MYTOKEN"}]},
           # Maximum number of times to attempt polling the miner (default is 20)
-          max_retries: 20,
+          max_status_attempts: 20,
           # Interval (in seconds) between each mAPI request (default is 300 - 5 minutes)
-          retry_after: 300
+          retry_status_after: 300
         ]}
       ]
 
@@ -228,8 +228,8 @@ defmodule Txbox do
   @impl true
   def init(opts) do
     children = [
-      Txbox.MapiStatus.Queue,
-      {Txbox.MapiStatus.Processor, opts}
+      {Txbox.Mapi.Queue, opts},
+      {Txbox.Mapi.Processor, opts}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

@@ -57,7 +57,7 @@ defmodule Txbox.Mapi.Queue do
 
   @impl true
   def handle_info(:populate_queue, state) do
-    queue = Transactions.list_tx_for_mapi()
+    queue = Transactions.list_tx_for_mapi(state.retry)
     |> :queue.from_list
 
     schedule_for_queue(60)
