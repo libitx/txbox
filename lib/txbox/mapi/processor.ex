@@ -30,8 +30,10 @@ defmodule Txbox.Mapi.Processor do
 
   @impl true
   def init(opts) do
-    miner = Keyword.get(opts, :miner, @default_miner)
-    |> Manic.miner
+    miner = case Keyword.get(opts, :miner, @default_miner) do
+      {url, opts} -> Manic.miner(url, opts)
+      url -> Manic.miner(url)
+    end
 
     state = %__MODULE__{miner: miner}
     {:consumer, state, subscribe_to: [{Txbox.Mapi.Queue, max_demand: 1}]}

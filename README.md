@@ -28,21 +28,14 @@ def deps do
 end
 ```
 
-Once installed, run the following tasks to generate and run the required database migrations.
-
-```console
-mix txbox.gen.migrations
-mix ecto.migrate
-```
-
-Update your application's configuration, making sure Txbox knows which Repo to use.
+Once installed, update your application's configuration, making sure Txbox knows which Repo to use.
 
 ```elixir
 # config/config.exs
 config :txbox, repo: MyApp.Repo
 ```      
 
-Finally, add `Txbox` to your application's supervision tree.
+Next, `Txbox` to your application's supervision tree.
 
 ```elixir
 children = [
@@ -57,6 +50,13 @@ children = [
 ]
 
 Supervisor.start_link(children, strategy: :one_for_one)
+```
+
+Finally, run the following tasks to generate and run the required database migrations.
+
+```console
+mix txbox.gen.migrations
+mix ecto.migrate
 ```
 
 ## Upgrading

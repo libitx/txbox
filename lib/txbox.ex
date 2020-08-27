@@ -27,21 +27,15 @@ defmodule Txbox do
         ]
       end
 
-  Once installed, run the following tasks to generate and run the required
-  database migrations.
+  Once installed, update your application's configuration, making sure Txbox
+  knows which Repo to use.
 
-  ```console
-  mix txbox.gen.migrations
-  mix ecto.migrate
+  ```elixir
+  # config/config.exs
+  config :txbox, repo: MyApp.Repo
   ```
 
-  Update your application's configuration, making sure Txbox knows which Repo to
-  use.
-
-      # config/config.exs
-      config :txbox, repo: MyApp.Repo
-
-  Finally, add `Txbox` to your application's supervision tree.
+  Next, add `Txbox` to your application's supervision tree.
 
       children = [
         {Txbox, [
@@ -55,6 +49,14 @@ defmodule Txbox do
       ]
 
       Supervisor.start_link(children, strategy: :one_for_one)
+
+  Finally, run the following tasks to generate and run the required database
+  migrations.
+
+  ```console
+  mix txbox.gen.migrations
+  mix ecto.migrate
+  ```
 
   ## Upgrading
 
