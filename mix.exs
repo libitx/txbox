@@ -4,7 +4,7 @@ defmodule Txbox.MixProject do
   def project do
     [
       app: :txbox,
-      version: "0.2.2",
+      version: "0.3.0",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -52,11 +52,11 @@ defmodule Txbox.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ecto, "~> 3.4"},
-      {:ecto_sql, "~> 3.4"},
-      {:ex_doc, "~> 0.22", only: :dev, runtime: false},
+      {:ecto, "~> 3.5"},
+      {:ecto_sql, "~> 3.5"},
+      {:ex_doc, "~> 0.23", only: :dev, runtime: false},
       {:jason, "~> 1.2"},
-      {:fsmx, "~> 0.2.0"},
+      {:fsmx, "~> 0.3"},
       {:gen_stage, "~> 1.0"},
       {:manic, "~> 0.0.4"},
       {:postgrex, "~> 0.15", optional: true}
