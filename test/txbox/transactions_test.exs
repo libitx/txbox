@@ -297,4 +297,39 @@ defmodule Txbox.TransactionsTest do
     end
   end
 
+
+  describe "with_rawtx/1" do
+    setup do
+      %{
+        tx1: fixture(%{rawtx: <<1,0,0,0,0,0,0,0,0,0>>}),
+        tx2: fixture(%{rawtx: <<1,0,0,0,0,0,0,0,0,0>>})
+      }
+    end
+
+    test "and raw_tx/1 by default does not select the rawtx", %{tx1: %{txid: txid}} do
+      assert %Tx{} = tx = Transactions.get_tx(txid)
+      assert is_nil(tx.rawtx)
+    end
+
+    test "and get_tx/1 selects rawtx", %{tx1: %{txid: txid}} do
+      assert %Tx{} = tx = Tx
+      |> Transactions.with_rawtx()
+      |> Transactions.get_tx(txid)
+      refute is_nil(tx.rawtx)
+    end
+
+    test "and list_tx/1 by default does not select the rawtx" do
+      txns = Transactions.list_tx()
+      assert Enum.all?(txns, & is_nil(&1.rawtx))
+    end
+
+    test "and list_tx/1 selects rawtx" do
+      txns = Tx
+      |> Transactions.with_rawtx()
+      |> Transactions.list_tx()
+      refute Enum.any?(txns, & is_nil(&1.rawtx))
+    end
+
+  end
+
 end

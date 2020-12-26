@@ -28,7 +28,7 @@ defmodule Txbox.Transactions do
   alias Txbox.Transactions.{Tx, MapiResponse}
 
 
-  @query_keys [:channel, :search, :tagged, :from, :to, :at, :order, :limit, :offset]
+  @query_keys [:channel, :search, :tagged, :from, :to, :at, :order, :limit, :offset, :rawtx]
 
 
   @doc """
@@ -62,7 +62,9 @@ defmodule Txbox.Transactions do
   @spec get_tx(Ecto.Queryable.t, binary) :: Ecto.Schema.t | nil
   def get_tx(tx \\ Tx, id) when is_binary(id) do
     pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
-    qry = preload(tx, status: ^pre_qry)
+    qry = tx
+    |> preload(status: ^pre_qry)
+    |> optimize_select
 
     case String.match?(id, ~r/^[a-f0-9]{64}$/i) do
       true ->
@@ -77,10 +79,10 @@ defmodule Txbox.Transactions do
 
 
   @doc false
-  def list_tx(), do: repo().all(Tx)
+  def list_tx(), do: list_tx(Tx, %{})
   @doc false
-  def list_tx(Tx = tx), do: repo().all(tx)
-  def list_tx(%Ecto.Query{} = tx), do: repo().all(tx)
+  def list_tx(Tx = tx), do: list_tx(tx, %{})
+  def list_tx(%Ecto.Query{} = tx), do: list_tx(tx, %{})
 
   @doc """
   Returns a list of transactions.
@@ -101,7 +103,46 @@ defmodule Txbox.Transactions do
     pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
     tx
     |> preload(status: ^pre_qry)
-    |> query(%{} = params)
+    |> query(params)
+    |> optimize_select
+    |> repo().all
+  end
+
+
+  @doc """
+  Returns a list of transactions that must be pushed or have their status
+  confirmed by mAPI.
+
+  This is used internally by `Txbox.Mapi.Queue` to fetch transactions for
+  automatic processing.
+
+  ## Options
+
+  The accepted options are:
+
+  * `:max_status_attempts` - How many times to poll mAPI for confirmation status. Defaults to `20`.
+  * `:retry_status_after` - Number of seconds before polling mAPI for confirmation status. Defaults to `300` (5 minutes).
+  """
+  @doc group: :query
+  @spec list_tx_for_mapi(keyword) :: list(Ecto.Schema.t)
+  def list_tx_for_mapi(opts \\ []) do
+    max_status_attempts = Keyword.get(opts, :max_status_attempts, 20)
+    retry_status_after = Keyword.get(opts, :retry_status_after, 300)
+    retry_datetime = DateTime.now!("Etc/UTC") |> DateTime.add(-retry_status_after)
+
+    pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
+
+    Tx
+    |> join(:left, [t], r in subquery(pre_qry), on: r.tx_guid == t.guid)
+    |> preload(status: ^pre_qry)
+    |> where([t],
+        t.state == "queued"
+        and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_guid = ?", "push", t.guid) < 1)
+    |> or_where([t, r],
+        t.state == "pushed"
+        and (is_nil(r) or r.inserted_at < ^retry_datetime)
+        and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_guid = ?", "status", t.guid) < ^max_status_attempts)
+    |> optimize_select
     |> repo().all
   end
 
@@ -263,43 +304,6 @@ defmodule Txbox.Transactions do
 
 
   @doc """
-  Returns a list of transactions that must be pushed or have their status
-  confirmed by mAPI.
-
-  This is used internally by `Txbox.Mapi.Queue` to fetch transactions for
-  automatic processing.
-
-  ## Options
-
-  The accepted options are:
-
-  * `:max_status_attempts` - How many times to poll mAPI for confirmation status. Defaults to `20`.
-  * `:retry_status_after` - Number of seconds before polling mAPI for confirmation status. Defaults to `300` (5 minutes).
-  """
-  @doc group: :query
-  @spec list_tx_for_mapi(keyword) :: list(Ecto.Schema.t)
-  def list_tx_for_mapi(opts \\ []) do
-    max_status_attempts = Keyword.get(opts, :max_status_attempts, 20)
-    retry_status_after = Keyword.get(opts, :retry_status_after, 300)
-    retry_datetime = DateTime.now!("Etc/UTC") |> DateTime.add(-retry_status_after)
-
-    pre_qry = from(r in MapiResponse, order_by: [desc: r.inserted_at])
-
-    Tx
-    |> join(:left, [t], r in subquery(pre_qry), on: r.tx_guid == t.guid)
-    |> preload(status: ^pre_qry)
-    |> where([t],
-        t.state == "queued"
-        and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_guid = ?", "push", t.guid) < 1)
-    |> or_where([t, r],
-        t.state == "pushed"
-        and (is_nil(r) or r.inserted_at < ^retry_datetime)
-        and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_guid = ?", "status", t.guid) < ^max_status_attempts)
-    |> list_tx
-  end
-
-
-  @doc """
   Query by the given query map.
   """
   @doc group: :expression
@@ -362,6 +366,14 @@ defmodule Txbox.Transactions do
     do: where(tx, [t], t.state != "confirmed")
 
 
+  @doc """
+  Ensures rawtx is selected in the given query.
+  """
+  @doc group: :expression
+  @spec with_rawtx(Ecto.Queryable.t) :: Ecto.Queryable.t
+  def with_rawtx(tx), do: select(tx, [t], t)
+
+
   # Normalizes a query map by converting all keys to strings, taking the
   # allowed keys, and converting back to atoms
   defp normalize_query(query) do
@@ -413,9 +425,20 @@ defmodule Txbox.Transactions do
     do: order_by(tx, desc: :block_height)
   defp build_query({:order, "-block_height"}, tx),
     do: order_by(tx, desc: :block_height)
-
   defp build_query({:order, _order}, tx), do: tx
+
   defp build_query({:limit, num}, tx), do: limit(tx, ^num)
   defp build_query({:offset, num}, tx), do: offset(tx, ^num)
+
+  defp build_query({:rawtx, val}, tx) when val in [false, nil], do: tx
+  defp build_query({:rawtx, _}, tx), do: with_rawtx(tx)
+
+  # Optimizes the select query unless already set
+  defp optimize_select(%{select: sel} = tx) when not is_nil(sel), do: tx
+  defp optimize_select(tx) do
+    keys = Tx.__schema__(:fields)
+    |> Enum.reject(& &1 == :rawtx)
+    select(tx, ^keys)
+  end
 
 end

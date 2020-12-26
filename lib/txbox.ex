@@ -263,6 +263,7 @@ defmodule Txbox do
   * `:order` - The attribute to sort transactions by
   * `:limit` - The maximum number of transactions to return
   * `:offset` - The start offset from which to return transactions (for pagination)
+  * `:rawtx` - Include the full rawtx in the query response (defaults false)
 
   ## Examples
 
@@ -296,12 +297,26 @@ defmodule Txbox do
   end
 
 
+  @doc false
+  def find(txid) when is_binary(txid),
+    do: find(@default_channel, txid)
+
+  @doc false
+  def find(txid, options) when is_binary(txid) and is_list(options),
+    do: find(@default_channel, txid, options)
+
   @doc """
   Finds a transaction by it's txid, scoped by the specified channel.
 
   If the channel is omitted, it defaults to `default_channel/0`. Alernatively,
   the channel can be specified as `"_"` which is the TXT syntax for the global
   scope.
+
+  ## Options
+
+  The accepted options are:
+
+  * `:rawtx` - Include the full rawtx in the query response (defaults false)
 
   ## Examples
 
@@ -320,10 +335,15 @@ defmodule Txbox do
       iex> Txbox.find("_", "6dfccf46359e033053ab1975c1e008ddc98560f591e8ed1c8bd051050992c110")
       {:ok, %Tx{}}
   """
-  @spec find(String.t, String.t) :: {:ok, Tx.t} | {:error, :not_found}
-  def find(channel \\ @default_channel, txid) when is_binary(txid) do
+  @spec find(String.t, String.t, keyword) :: {:ok, Tx.t} | {:error, :not_found}
+  def find(channel, txid, options \\ [])
+    when is_binary(channel)
+    and is_binary(txid)
+  do
+    rawtx = Keyword.get(options, :rawtx)
     tx = Tx
     |> Transactions.channel(channel)
+    |> Transactions.query(%{rawtx: rawtx})
     |> Transactions.get_tx(txid)
 
     case tx do

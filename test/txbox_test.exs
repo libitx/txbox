@@ -15,7 +15,7 @@ defmodule TxboxTest do
 
   describe "all/2" do
     setup do
-      tx1 = fixture(%{meta: %{title: "test1"}, tags: ["foo"]})
+      tx1 = fixture(%{rawtx: <<1,0,0,0,0,0,0,0,0,0>>, meta: %{title: "test1"}, tags: ["foo"]})
       tx2 = fixture(%{channel: "test", meta: %{title: "test2"}, tags: ["foo", "bar", "baz"]})
       {:ok, tx3} = fixture(%{state: "pushed", meta: %{title: "test3"}}) |> Transactions.update_tx_state("confirmed", %{payload: %{"block_height" => 1}})
       {:ok, tx4} = fixture(%{state: "pushed", meta: %{title: "test4"}}) |> Transactions.update_tx_state("confirmed", %{payload: %{"block_height" => 2}})
@@ -36,6 +36,13 @@ defmodule TxboxTest do
     test "get all tx with global channel scope" do
       assert {:ok, txns} = Txbox.all("_")
       assert length(txns) == 5
+      assert Enum.all?(txns, & is_nil(&1.rawtx))
+    end
+
+    test "get all tx with rawtx selected" do
+      assert {:ok, txns} = Txbox.all("_", %{rawtx: true})
+      assert length(txns) == 5
+      refute Enum.all?(txns, & is_nil(&1.rawtx))
     end
 
     test "get all tx with matching tags" do
@@ -122,14 +129,21 @@ defmodule TxboxTest do
 
   describe "find/2" do
     setup do
-      tx1 = fixture(%{meta: %{title: "test1"}, tags: ["foo"]})
+      tx1 = fixture(%{rawtx: <<1,0,0,0,0,0,0,0,0,0>>, meta: %{title: "test1"}, tags: ["foo"]})
       tx2 = fixture(%{channel: "test", meta: %{title: "test2"}, tags: ["foo", "bar", "baz"]})
       %{tx1: tx1, tx2: tx2}
     end
 
-    test "get a tx in default channel", %{tx1: tx} do
-      assert {:ok, %Tx{channel: "txbox"} = tx} = Txbox.find(tx.txid)
+    test "get a tx in default channel", %{tx1: %{txid: txid}} do
+      assert {:ok, %Tx{channel: "txbox"} = tx} = Txbox.find(txid)
       assert tx.meta.title == "test1"
+      assert is_nil(tx.rawtx)
+    end
+
+    test "get a tx with rawtx selected", %{tx1: %{txid: txid}} do
+      assert {:ok, %Tx{channel: "txbox"} = tx} = Txbox.find(txid, rawtx: true)
+      assert tx.meta.title == "test1"
+      refute is_nil(tx.rawtx)
     end
 
     test "get a tx scoped by channel", %{tx2: tx} do
