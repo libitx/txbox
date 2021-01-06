@@ -23,7 +23,7 @@ The package can be installed by adding `txbox` to your list of dependencies in `
 ```elixir
 def deps do
   [
-    {:txbox, "~> 0.2"}
+    {:txbox, "~> 0.3"}
   ]
 end
 ```

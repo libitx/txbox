@@ -23,7 +23,7 @@ defmodule Txbox do
 
       def deps do
         [
-          {:txbox, "~> 0.2"}
+          {:txbox, "~> 0.3"}
         ]
       end
 
@@ -356,13 +356,6 @@ defmodule Txbox do
   end
 
 
-  @doc "Finds a transaction by it's txid, scoped by the specified channel."
-  @deprecated "Use find/2 instead"
-  def get(channel \\ @default_channel, txid)
-    when is_binary(txid),
-    do: find(channel, txid)
-
-
   @doc """
   Adds the given transaction parameters into Txbox, within the specified channel.
 
@@ -404,12 +397,6 @@ defmodule Txbox do
         {:error, reason}
     end
   end
-
-
-  @doc "Adds the given transaction parameters into Txbox, within the specified channel."
-  @deprecated "Use create/2 instead"
-  def set(channel \\ @default_channel, %{} = attrs),
-    do: create(channel, attrs)
 
 
   @doc """
