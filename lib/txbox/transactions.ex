@@ -142,7 +142,6 @@ defmodule Txbox.Transactions do
         t.state == "pushed"
         and (is_nil(r) or r.inserted_at < ^retry_datetime)
         and fragment("SELECT COUNT(*) FROM txbox_mapi_responses WHERE type = ? AND tx_guid = ?", "status", t.guid) < ^max_status_attempts)
-    |> optimize_select
     |> repo().all
   end
 
