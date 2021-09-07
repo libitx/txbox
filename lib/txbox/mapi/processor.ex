@@ -52,8 +52,6 @@ defmodule Txbox.Mapi.Processor do
 
   # Sends the transaction to the miner
   defp mapi_push(%Tx{txid: txid, rawtx: rawtx} = tx, %{miner: miner}) do
-    rawtx = Base.encode16(rawtx, case: :lower)
-
     with {:ok, env} <- Manic.TX.push(miner, rawtx, as: :envelope),
          {:ok, payload} <- Manic.JSONEnvelope.parse_payload(env)
     do
@@ -79,7 +77,7 @@ defmodule Txbox.Mapi.Processor do
       Transactions.update_tx_state(tx, state, Map.put(env, :payload, payload))
     else
       {:error, error} ->
-        Logger.error "mAPI push error: #{txid} : #{inspect error}"
+        Logger.error "mAPI status error: #{txid} : #{inspect error}"
     end
   end
 

@@ -23,9 +23,9 @@ defmodule Txbox.Mapi.ProcessorTest do
 
       Tesla.Mock.mock_global fn env ->
         cond do
-          String.match?(env.body, ~r/01000000000000000000/) ->
+          Base.encode16(env.body) |> String.match?(~r/01000000000000000000/) ->
             File.read!("test/mocks/mapi-push-success.json") |> Jason.decode! |> Tesla.Mock.json
-          String.match?(env.body, ~r/02000000000000000000/) ->
+          Base.encode16(env.body) |> String.match?(~r/02000000000000000000/) ->
             File.read!("test/mocks/mapi-push-failure.json") |> Jason.decode! |> Tesla.Mock.json
         end
       end

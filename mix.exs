@@ -4,7 +4,7 @@ defmodule Txbox.MixProject do
   def project do
     [
       app: :txbox,
-      version: "0.3.1",
+      version: "0.3.2",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -58,7 +58,7 @@ defmodule Txbox.MixProject do
       {:jason, "~> 1.2"},
       {:fsmx, "~> 0.3"},
       {:gen_stage, "~> 1.0"},
-      {:manic, "~> 0.0.4"},
+      {:manic, "~> 0.0.5"},
       {:postgrex, "~> 0.15", optional: true}
     ]
   end
