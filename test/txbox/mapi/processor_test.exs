@@ -18,14 +18,14 @@ defmodule Txbox.Mapi.ProcessorTest do
       {:ok, pid1} = Queue.start_link
       {:ok, pid2} = Processor.start_link
       :timer.sleep(1)
-      tx1 = fixture(%{state: "queued", rawtx: <<1, 0, 0, 0, 0, 0, 0, 0, 0, 0>>})
-      tx2 = fixture(%{state: "queued", rawtx: <<2, 0, 0, 0, 0, 0, 0, 0, 0, 0>>})
+      tx1 = fixture(%{state: "queued", rawtx: "01000000000000000000"})
+      tx2 = fixture(%{state: "queued", rawtx: "02000000000000000000"})
 
       Tesla.Mock.mock_global fn env ->
         cond do
-          Base.encode16(env.body) |> String.match?(~r/01000000000000000000/) ->
+          String.match?(env.body,~r/01000000000000000000/) ->
             File.read!("test/mocks/mapi-push-success.json") |> Jason.decode! |> Tesla.Mock.json
-          Base.encode16(env.body) |> String.match?(~r/02000000000000000000/) ->
+          String.match?(env.body, ~r/02000000000000000000/) ->
             File.read!("test/mocks/mapi-push-failure.json") |> Jason.decode! |> Tesla.Mock.json
         end
       end
